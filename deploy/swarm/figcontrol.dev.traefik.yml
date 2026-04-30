@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+  api:
+    image: ghcr.io/mathwidu/figcontrol-api:dev-latest
+    environment:
+      PORT: "3001"
+      DATABASE_URL_FILE: /run/secrets/figcontrol_dev_database_url_v1
+      JWT_ACCESS_SECRET_FILE: /run/secrets/figcontrol_dev_jwt_access_secret_v1
+      JWT_REFRESH_SECRET_FILE: /run/secrets/figcontrol_dev_jwt_refresh_secret_v1
+      JWT_ACCESS_TTL_SECONDS: "900"
+      JWT_REFRESH_TTL_SECONDS: "2592000"
+      FIGCONTROL_EMAIL_PROVIDER: "resend"
+      FIGCONTROL_EMAIL_FROM: "FigControl DEV <noreply@notifications.matheusduarte.dev.br>"
+      FIGCONTROL_EMAIL_RESEND_API_KEY_FILE: "/run/secrets/figcontrol_dev_resend_api_key_v1"
+      FIGCONTROL_WEB_URL: "https://figcontrol-dev.matheusduarte.dev.br"
+      FIGCONTROL_EMAIL_VERIFICATION_TOKEN_TTL_MINUTES: "1440"
+      FIGCONTROL_EMAIL_VERIFICATION_RESEND_COOLDOWN_MINUTES: "15"
+      FIGCONTROL_PASSWORD_RESET_TOKEN_TTL_MINUTES: "60"
+      FIGCONTROL_PASSWORD_RESET_RESEND_COOLDOWN_MINUTES: "5"
+      CORS_ORIGIN: "https://figcontrol-dev.matheusduarte.dev.br"
+    secrets:
+      - figcontrol_dev_database_url_v1
+      - figcontrol_dev_jwt_access_secret_v1
+      - figcontrol_dev_jwt_refresh_secret_v1
+      - figcontrol_dev_resend_api_key_v1
+    networks:
+      - network_swarm_public
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=network_swarm_public"
+        - "traefik.http.routers.figcontrol-dev-api.rule=Host(`figcontrol-api-dev.matheusduarte.dev.br`)"
+        - "traefik.http.routers.figcontrol-dev-api.entrypoints=websecure"
+        - "traefik.http.routers.figcontrol-dev-api.tls=true"
+        - "traefik.http.routers.figcontrol-dev-api.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.figcontrol-dev-api.loadbalancer.server.port=3001"
+
+  web:
+    image: ghcr.io/mathwidu/figcontrol-web:dev-latest
+    networks:
+      - network_swarm_public
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=network_swarm_public"
+        - "traefik.http.routers.figcontrol-dev-web.rule=Host(`figcontrol-dev.matheusduarte.dev.br`)"
+        - "traefik.http.routers.figcontrol-dev-web.entrypoints=websecure"
+        - "traefik.http.routers.figcontrol-dev-web.tls=true"
+        - "traefik.http.routers.figcontrol-dev-web.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.figcontrol-dev-web.loadbalancer.server.port=3000"
+
+networks:
+  network_swarm_public:
+    external: true
+
+secrets:
+  figcontrol_dev_database_url_v1:
+    external: true
+  figcontrol_dev_jwt_access_secret_v1:
+    external: true
+  figcontrol_dev_jwt_refresh_secret_v1:
+    external: true
+  figcontrol_dev_resend_api_key_v1:
+    external: true

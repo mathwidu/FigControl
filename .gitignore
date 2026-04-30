@@ -1,0 +1,15 @@
+node_modules
+.next
+dist
+coverage
+.turbo
+.cache
+.env
+.env.*
+!.env.example
+*.log
+*.tsbuildinfo
+.DS_Store
+playwright-report
+test-results
+apps/api/generated

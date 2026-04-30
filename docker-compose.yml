@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: figcontrol_db
+      POSTGRES_USER: figcontrol_user
+      POSTGRES_PASSWORD: figcontrol_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - figcontrol_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U figcontrol_user -d figcontrol_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      PORT: "3001"
+      DATABASE_URL: postgresql://figcontrol_user:figcontrol_password@db:5432/figcontrol_db?schema=public
+      JWT_ACCESS_SECRET: local-access-secret-change-me-32
+      JWT_REFRESH_SECRET: local-refresh-secret-change-me-32
+      JWT_ACCESS_TTL_SECONDS: "900"
+      JWT_REFRESH_TTL_SECONDS: "2592000"
+      FIGCONTROL_EMAIL_PROVIDER: log
+      FIGCONTROL_EMAIL_FROM: "FigControl <noreply@notifications.matheusduarte.dev.br>"
+      FIGCONTROL_WEB_URL: http://localhost:3000
+      FIGCONTROL_EMAIL_VERIFICATION_TOKEN_TTL_MINUTES: "1440"
+      FIGCONTROL_EMAIL_VERIFICATION_RESEND_COOLDOWN_MINUTES: "15"
+      FIGCONTROL_PASSWORD_RESET_TOKEN_TTL_MINUTES: "60"
+      FIGCONTROL_PASSWORD_RESET_RESEND_COOLDOWN_MINUTES: "5"
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  figcontrol_db_data:

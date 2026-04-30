@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SectionKind {
+  TEAM
+  ALBUM_EXTRA
+  COCA_COLA
+}
+
+model User {
+  id                      String                   @id @default(uuid())
+  email                   String                   @unique
+  passwordHash            String                   @map("password_hash")
+  emailVerifiedAt         DateTime?                @map("email_verified_at")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  refreshTokens           RefreshToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+  quantities              UserStickerQuantity[]
+
+  @@map("users")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique @map("token_hash")
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique @map("token_hash")
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  tokenHash  String    @unique @map("token_hash")
+  userId     String    @map("user_id")
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Collection {
+  id                  String           @id @default(uuid())
+  slug                String           @unique
+  name                String
+  baseStickerCount    Int              @map("base_sticker_count")
+  trackedStickerCount Int              @map("tracked_sticker_count")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+  sections            StickerSection[]
+
+  @@map("collections")
+}
+
+model StickerSection {
+  id           String      @id @default(uuid())
+  collectionId String      @map("collection_id")
+  slug         String
+  name         String
+  kind         SectionKind
+  order        Int
+  collection   Collection  @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  stickers     Sticker[]
+
+  @@unique([collectionId, slug])
+  @@index([collectionId])
+  @@map("sticker_sections")
+}
+
+model Sticker {
+  id          String                @id @default(uuid())
+  sectionId   String                @map("section_id")
+  code        String                @unique
+  localNumber Int                   @map("local_number")
+  label       String
+  isBaseAlbum Boolean               @map("is_base_album")
+  special     Boolean               @default(false)
+  order       Int
+  section     StickerSection        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  quantities  UserStickerQuantity[]
+
+  @@index([sectionId])
+  @@map("stickers")
+}
+
+model UserStickerQuantity {
+  userId    String   @map("user_id")
+  stickerId String   @map("sticker_id")
+  quantity  Int
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sticker   Sticker  @relation(fields: [stickerId], references: [id], onDelete: Cascade)
+
+  @@id([userId, stickerId])
+  @@map("user_sticker_quantities")
+}
