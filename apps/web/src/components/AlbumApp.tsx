@@ -11,9 +11,9 @@ import {
   Minus,
   Plus,
   Repeat2,
-  Search,
   Share2,
   WifiOff,
+  X,
 } from "lucide-react";
 import {
   type CSSProperties,
@@ -33,10 +33,11 @@ import {
   type AuthTokens,
 } from "../lib/api";
 import {
-  filterCollectionSections,
+  filterSectionStickersByOwnership,
   getOfflineMutationMessage,
   getSectionDisplayCode,
   summarizeSectionProgress,
+  type StickerOwnershipTab,
   type WebCollection,
   type WebSection,
   type WebSticker,
@@ -50,8 +51,7 @@ import {
 } from "../lib/storage";
 
 type AuthMode = "login" | "register" | "forgot";
-type AppView = "album" | "missing" | "duplicates" | "search";
-type ListMode = "missing" | "duplicates";
+type DetailTab = StickerOwnershipTab;
 
 const sectionTones = [
   ["#049a49", "#f6d80e", "#08396d"],
@@ -70,11 +70,13 @@ export function AlbumApp() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [collection, setCollection] = useState<WebCollection | null>(null);
-  const [view, setView] = useState<AppView>("album");
-  const [query, setQuery] = useState("");
   const [activeSectionSlug, setActiveSectionSlug] = useState<string | null>(
     null,
   );
+  const [detailTab, setDetailTab] = useState<DetailTab>("missing");
+  const [transferringStickerCode, setTransferringStickerCode] = useState<
+    string | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(true);
@@ -132,39 +134,6 @@ export function AlbumApp() {
     activeSectionIndex >= 0 && collection
       ? collection.sections[activeSectionIndex]
       : null;
-
-  const missingSections = useMemo(
-    () =>
-      collection
-        ? filterCollectionSections(collection.sections, {
-            filter: "missing",
-            query: "",
-          })
-        : [],
-    [collection],
-  );
-
-  const duplicateSections = useMemo(
-    () =>
-      collection
-        ? filterCollectionSections(collection.sections, {
-            filter: "duplicates",
-            query: "",
-          })
-        : [],
-    [collection],
-  );
-
-  const searchedSections = useMemo(
-    () =>
-      collection
-        ? filterCollectionSections(collection.sections, {
-            filter: "all",
-            query,
-          })
-        : [],
-    [collection, query],
-  );
 
   async function handleAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -253,11 +222,14 @@ export function AlbumApp() {
     }
   }
 
-  async function changeQuantity(sticker: WebSticker, nextQuantity: number) {
-    if (!auth) return;
+  async function changeQuantity(
+    sticker: WebSticker,
+    nextQuantity: number,
+  ): Promise<boolean> {
+    if (!auth) return false;
     if (!isOnline) {
       setNotice(getOfflineMutationMessage());
-      return;
+      return false;
     }
 
     setNotice(null);
@@ -271,19 +243,24 @@ export function AlbumApp() {
       );
       saveCollection(updated);
       setCollection(updated);
+      return true;
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
           : "Falha ao salvar figurinha.",
       );
+      return false;
     }
   }
 
-  function cycleQuantity(sticker: WebSticker) {
-    const nextQuantity =
-      sticker.quantity === 0 ? 1 : sticker.quantity === 1 ? 2 : 0;
-    void changeQuantity(sticker, nextQuantity);
+  function markMissingAsOwned(sticker: WebSticker) {
+    setTransferringStickerCode(sticker.code);
+    window.setTimeout(() => {
+      void changeQuantity(sticker, 1).finally(() => {
+        setTransferringStickerCode(null);
+      });
+    }, 300);
   }
 
   function logout() {
@@ -303,6 +280,9 @@ export function AlbumApp() {
 
   function openSection(section: WebSection) {
     setActiveSectionSlug(section.slug);
+    setDetailTab(
+      summarizeSectionProgress(section).missing === 0 ? "owned" : "missing",
+    );
   }
 
   function openAdjacentSection(direction: -1 | 1) {
@@ -310,22 +290,15 @@ export function AlbumApp() {
     const nextIndex =
       (activeSectionIndex + direction + collection.sections.length) %
       collection.sections.length;
-    setActiveSectionSlug(collection.sections[nextIndex].slug);
+    openSection(collection.sections[nextIndex]);
   }
 
-  function copyList(mode: ListMode) {
-    if (!collection) return;
-    void navigator.clipboard.writeText(buildListShareText(collection, mode));
-    setNotice(
-      mode === "missing"
-        ? "Lista de faltantes copiada."
-        : "Lista de repetidas copiada.",
-    );
+  function copyText(text: string, message: string) {
+    void navigator.clipboard.writeText(text);
+    setNotice(message);
   }
 
-  function shareList(mode: ListMode) {
-    if (!collection) return;
-    const text = buildListShareText(collection, mode);
+  function shareText(text: string) {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   }
 
@@ -450,10 +423,10 @@ export function AlbumApp() {
         </div>
         <div className="summary-grid app-summary">
           <Metric
-            label="Total"
+            label="Tenho"
             value={`${collection.summary.tracked.have}/${collection.summary.tracked.total}`}
           />
-          <Metric label="Faltando" value={collection.summary.tracked.missing} />
+          <Metric label="Faltam" value={collection.summary.tracked.missing} />
           <Metric
             label="Repetidas"
             value={collection.summary.tracked.duplicates}
@@ -470,56 +443,14 @@ export function AlbumApp() {
         </div>
       </section>
 
-      <div className="app-search">
-        <Search size={18} />
-        <input
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setView("search");
-          }}
-          placeholder="Buscar selecao, jogador ou codigo"
-          aria-label="Buscar figurinhas"
-        />
-      </div>
-
       <div className="app-layout">
         <section className="primary-pane" aria-label="Navegacao do album">
-          {view === "album" ? (
-            <AlbumHome
-              collection={collection}
-              sections={collection.sections}
-              onOpenSection={openSection}
-            />
-          ) : null}
-          {view === "missing" ? (
-            <GroupedStickerView
-              collection={collection}
-              mode="missing"
-              sections={missingSections}
-              onCopy={() => copyList("missing")}
-              onShare={() => shareList("missing")}
-              onOpenSection={openSection}
-            />
-          ) : null}
-          {view === "duplicates" ? (
-            <GroupedStickerView
-              collection={collection}
-              mode="duplicates"
-              sections={duplicateSections}
-              onCopy={() => copyList("duplicates")}
-              onShare={() => shareList("duplicates")}
-              onOpenSection={openSection}
-            />
-          ) : null}
-          {view === "search" ? (
-            <SearchPanel
-              query={query}
-              setQuery={setQuery}
-              sections={searchedSections}
-              onOpenSection={openSection}
-            />
-          ) : null}
+          <AlbumHome
+            collection={collection}
+            sections={collection.sections}
+            activeSectionSlug={activeSectionSlug}
+            onOpenSection={openSection}
+          />
         </section>
 
         {activeSection ? (
@@ -528,39 +459,24 @@ export function AlbumApp() {
             aria-label={`Detalhes de ${activeSection.name}`}
           >
             <SectionDetail
+              collectionName={collection.name}
               section={activeSection}
+              activeTab={detailTab}
+              transferringStickerCode={transferringStickerCode}
               onBack={() => setActiveSectionSlug(null)}
               onPrevious={() => openAdjacentSection(-1)}
               onNext={() => openAdjacentSection(1)}
-              onCycleSticker={cycleQuantity}
+              onTabChange={setDetailTab}
+              onMarkOwned={markMissingAsOwned}
               onChangeQuantity={changeQuantity}
+              onCopyDuplicates={(text) =>
+                copyText(text, "Lista de repetidas copiada.")
+              }
+              onShareDuplicates={shareText}
             />
           </aside>
         ) : null}
       </div>
-
-      <nav className="bottom-nav" aria-label="Navegacao principal">
-        <NavButton
-          label="Album"
-          active={view === "album"}
-          onClick={() => setView("album")}
-        />
-        <NavButton
-          label="Faltando"
-          active={view === "missing"}
-          onClick={() => setView("missing")}
-        />
-        <NavButton
-          label="Repetidas"
-          active={view === "duplicates"}
-          onClick={() => setView("duplicates")}
-        />
-        <NavButton
-          label="Busca"
-          active={view === "search"}
-          onClick={() => setView("search")}
-        />
-      </nav>
     </div>
   );
 }
@@ -590,10 +506,12 @@ function StatusMessages({
 function AlbumHome({
   collection,
   sections,
+  activeSectionSlug,
   onOpenSection,
 }: {
   collection: WebCollection;
   sections: WebSection[];
+  activeSectionSlug: string | null;
   onOpenSection: (section: WebSection) => void;
 }) {
   return (
@@ -610,6 +528,7 @@ function AlbumHome({
           <SectionCard
             key={section.slug}
             section={section}
+            active={section.slug === activeSectionSlug}
             onOpen={() => onOpenSection(section)}
           />
         ))}
@@ -620,16 +539,18 @@ function AlbumHome({
 
 function SectionCard({
   section,
+  active,
   onOpen,
 }: {
   section: WebSection;
+  active: boolean;
   onOpen: () => void;
 }) {
   const summary = summarizeSectionProgress(section);
 
   return (
     <button
-      className="section-card"
+      className={`section-card ${active ? "active" : ""}`}
       style={sectionToneStyle(section)}
       type="button"
       onClick={onOpen}
@@ -653,22 +574,54 @@ function SectionCard({
 }
 
 function SectionDetail({
+  collectionName,
   section,
+  activeTab,
+  transferringStickerCode,
   onBack,
   onPrevious,
   onNext,
-  onCycleSticker,
+  onTabChange,
+  onMarkOwned,
   onChangeQuantity,
+  onCopyDuplicates,
+  onShareDuplicates,
 }: {
+  collectionName: string;
   section: WebSection;
+  activeTab: DetailTab;
+  transferringStickerCode: string | null;
   onBack: () => void;
   onPrevious: () => void;
   onNext: () => void;
-  onCycleSticker: (sticker: WebSticker) => void;
-  onChangeQuantity: (sticker: WebSticker, nextQuantity: number) => void;
+  onTabChange: (tab: DetailTab) => void;
+  onMarkOwned: (sticker: WebSticker) => void;
+  onChangeQuantity: (
+    sticker: WebSticker,
+    nextQuantity: number,
+  ) => Promise<boolean>;
+  onCopyDuplicates: (text: string) => void;
+  onShareDuplicates: (text: string) => void;
 }) {
+  const [selectedStickerCode, setSelectedStickerCode] = useState<string | null>(
+    null,
+  );
+  const [duplicatesOpen, setDuplicatesOpen] = useState(false);
   const summary = summarizeSectionProgress(section);
   const isComplete = summary.total > 0 && summary.missing === 0;
+  const visibleStickers = filterSectionStickersByOwnership(section, activeTab);
+  const duplicateStickers = section.stickers.filter(
+    (sticker) => sticker.quantity > 1,
+  );
+  const selectedSticker = selectedStickerCode
+    ? section.stickers.find((sticker) => sticker.code === selectedStickerCode)
+    : null;
+  const duplicateText = buildSectionDuplicateText(collectionName, section);
+
+  useEffect(() => {
+    setSelectedStickerCode(null);
+    setDuplicatesOpen(false);
+  }, [section.slug, activeTab]);
 
   return (
     <section
@@ -719,229 +672,233 @@ function SectionDetail({
         )}
       </div>
 
-      <div className="sticker-grid compact">
-        {section.stickers.map((sticker) => (
-          <StickerTile
-            key={sticker.code}
-            sticker={sticker}
-            onCycle={() => onCycleSticker(sticker)}
-            onDecrease={() => onChangeQuantity(sticker, sticker.quantity - 1)}
-            onIncrease={() => onChangeQuantity(sticker, sticker.quantity + 1)}
-          />
-        ))}
+      <div className="detail-tabs" role="tablist" aria-label="Status da secao">
+        <button
+          className={`tab-button ${activeTab === "missing" ? "active" : ""}`}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "missing"}
+          onClick={() => onTabChange("missing")}
+        >
+          Faltam <span>{summary.missing}</span>
+        </button>
+        <button
+          className={`tab-button ${activeTab === "owned" ? "active" : ""}`}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "owned"}
+          onClick={() => onTabChange("owned")}
+        >
+          Tenho <span>{summary.have}</span>
+        </button>
       </div>
+
+      {duplicateStickers.length > 0 ? (
+        <div className="section-action-row">
+          <button
+            className="text-button repeat-button"
+            type="button"
+            onClick={() => setDuplicatesOpen((value) => !value)}
+          >
+            <Repeat2 size={16} />
+            Ver repetidas
+          </button>
+        </div>
+      ) : null}
+
+      {duplicatesOpen ? (
+        <section className="duplicates-panel" aria-label="Repetidas da secao">
+          <div className="duplicates-panel-heading">
+            <strong>Repetidas</strong>
+            <div className="button-row compact-actions">
+              <button
+                className="icon-button subtle"
+                type="button"
+                onClick={() => onShareDuplicates(duplicateText)}
+                title="Enviar repetidas no WhatsApp"
+              >
+                <Share2 size={17} />
+              </button>
+              <button
+                className="icon-button subtle"
+                type="button"
+                onClick={() => onCopyDuplicates(duplicateText)}
+                title="Copiar repetidas"
+              >
+                <Copy size={17} />
+              </button>
+            </div>
+          </div>
+          <div className="code-pill-grid">
+            {duplicateStickers.map((sticker) => (
+              <span className="code-pill static" key={sticker.code}>
+                {sticker.code} x{sticker.quantity - 1}
+              </span>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {visibleStickers.length === 0 ? (
+        <div className="section-empty-state">
+          <Check size={28} />
+          <p>
+            {activeTab === "missing"
+              ? "Nada faltando nesta secao."
+              : "Nada marcado nesta secao."}
+          </p>
+        </div>
+      ) : (
+        <div className="sticker-grid compact">
+          {visibleStickers.map((sticker) => (
+            <StickerTile
+              key={sticker.code}
+              sticker={sticker}
+              mode={activeTab}
+              transferring={transferringStickerCode === sticker.code}
+              onClick={() =>
+                activeTab === "missing"
+                  ? onMarkOwned(sticker)
+                  : setSelectedStickerCode(sticker.code)
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      {selectedSticker ? (
+        <StickerActions
+          sticker={selectedSticker}
+          onClose={() => setSelectedStickerCode(null)}
+          onAddDuplicate={async () => {
+            const changed = await onChangeQuantity(
+              selectedSticker,
+              selectedSticker.quantity + 1,
+            );
+            if (changed) setSelectedStickerCode(null);
+          }}
+          onRemoveDuplicate={async () => {
+            const changed = await onChangeQuantity(
+              selectedSticker,
+              Math.max(1, selectedSticker.quantity - 1),
+            );
+            if (changed) setSelectedStickerCode(null);
+          }}
+          onMarkMissing={async () => {
+            const changed = await onChangeQuantity(selectedSticker, 0);
+            if (changed) {
+              setSelectedStickerCode(null);
+              onTabChange("missing");
+            }
+          }}
+        />
+      ) : null}
     </section>
   );
 }
 
 function StickerTile({
   sticker,
-  onCycle,
-  onDecrease,
-  onIncrease,
+  mode,
+  transferring,
+  onClick,
 }: {
   sticker: WebSticker;
-  onCycle: () => void;
-  onDecrease: () => void;
-  onIncrease: () => void;
+  mode: DetailTab;
+  transferring: boolean;
+  onClick: () => void;
 }) {
   const state =
-    sticker.quantity === 0
-      ? "missing"
+    transferring || sticker.quantity === 1
+      ? "have"
       : sticker.quantity > 1
         ? "duplicate"
-        : "have";
+        : "missing";
+  const actionLabel =
+    mode === "missing"
+      ? `Marcar ${sticker.code} como tenho`
+      : `Abrir ações de ${sticker.code}`;
 
   return (
-    <article className={`sticker-tile ${state}`}>
+    <article
+      className={`sticker-tile ${state} ${transferring ? "transferring" : ""}`}
+    >
       <button
         className="sticker-card-button"
         type="button"
-        onClick={onCycle}
-        aria-label={`${sticker.code} quantidade ${sticker.quantity}`}
+        onClick={onClick}
+        aria-label={actionLabel}
       >
         <span className="sticker-code">{sticker.code}</span>
         <span className="sticker-number">{sticker.localNumber}</span>
-        {sticker.quantity > 1 ? (
-          <span className="duplicate-badge">x{sticker.quantity - 1}</span>
-        ) : null}
+        <span className="sticker-card-meta">
+          {sticker.quantity > 1
+            ? `${sticker.quantity - 1} repetida${sticker.quantity - 1 > 1 ? "s" : ""}`
+            : sticker.quantity === 1 || transferring
+              ? "Tenho"
+              : "Falta"}
+        </span>
       </button>
-      <div className="quantity-row">
-        <button
-          className="quantity-button"
-          type="button"
-          onClick={onDecrease}
-          title={`Diminuir ${sticker.code}`}
-        >
-          <Minus size={15} />
-        </button>
-        <div className="quantity-value">
-          {sticker.quantity > 1 ? (
-            <Repeat2 size={14} />
-          ) : sticker.quantity === 1 ? (
-            <Check size={14} />
-          ) : null}
-          {sticker.quantity}
-        </div>
-        <button
-          className="quantity-button primary"
-          type="button"
-          onClick={onIncrease}
-          title={`Aumentar ${sticker.code}`}
-        >
-          <Plus size={15} />
-        </button>
-      </div>
     </article>
   );
 }
 
-function GroupedStickerView({
-  collection,
-  mode,
-  sections,
-  onCopy,
-  onShare,
-  onOpenSection,
+function StickerActions({
+  sticker,
+  onClose,
+  onAddDuplicate,
+  onRemoveDuplicate,
+  onMarkMissing,
 }: {
-  collection: WebCollection;
-  mode: ListMode;
-  sections: WebSection[];
-  onCopy: () => void;
-  onShare: () => void;
-  onOpenSection: (section: WebSection) => void;
-}) {
-  const title = mode === "missing" ? "Faltando" : "Repetidas";
-  const emptyText =
-    mode === "missing" ? "Nada faltando." : "Sem repetidas por aqui.";
-
-  return (
-    <div className={`grouped-view ${mode}`}>
-      <div className="view-heading contrast">
-        <div>
-          <p className="eyebrow">{collection.name}</p>
-          <h2>{title}</h2>
-        </div>
-        <div className="button-row compact-actions">
-          <button
-            className="icon-button translucent"
-            type="button"
-            onClick={onShare}
-            title="Enviar no WhatsApp"
-          >
-            <Share2 size={18} />
-          </button>
-          <button
-            className="text-button translucent"
-            type="button"
-            onClick={onCopy}
-          >
-            <Copy size={17} /> Copiar
-          </button>
-        </div>
-      </div>
-
-      {sections.length === 0 ? (
-        <div className="empty-state">
-          <Check size={32} />
-          <p>{emptyText}</p>
-        </div>
-      ) : (
-        <div className="group-list">
-          {sections.map((section) => (
-            <section className="sticker-group" key={section.slug}>
-              <button
-                className="group-heading"
-                type="button"
-                onClick={() => onOpenSection(section)}
-              >
-                <span>{section.name}</span>
-                <span>{section.stickers.length}</span>
-              </button>
-              <div className="code-pill-grid">
-                {section.stickers.map((sticker) => (
-                  <button
-                    className="code-pill"
-                    type="button"
-                    key={sticker.code}
-                    onClick={() => onOpenSection(section)}
-                  >
-                    {mode === "duplicates"
-                      ? `${sticker.code} x${sticker.quantity - 1}`
-                      : sticker.code}
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SearchPanel({
-  query,
-  setQuery,
-  sections,
-  onOpenSection,
-}: {
-  query: string;
-  setQuery: (query: string) => void;
-  sections: WebSection[];
-  onOpenSection: (section: WebSection) => void;
+  sticker: WebSticker;
+  onClose: () => void;
+  onAddDuplicate: () => Promise<void>;
+  onRemoveDuplicate: () => Promise<void>;
+  onMarkMissing: () => Promise<void>;
 }) {
   return (
-    <div className="search-panel">
-      <div className="view-heading">
-        <div>
-          <p className="eyebrow">Busca</p>
-          <h2>Encontre figurinhas</h2>
+    <div className="sticker-actions-backdrop" role="presentation">
+      <section
+        className="sticker-actions-panel"
+        aria-labelledby="sticker-actions-title"
+      >
+        <div className="sticker-actions-heading">
+          <div>
+            <p className="eyebrow">Figurinha</p>
+            <h3 id="sticker-actions-title">{sticker.code}</h3>
+          </div>
+          <button
+            className="icon-button subtle"
+            type="button"
+            onClick={onClose}
+            title="Fechar"
+          >
+            <X size={18} />
+          </button>
         </div>
-        <span>
-          {sections.reduce(
-            (total, section) => total + section.stickers.length,
-            0,
-          )}{" "}
-          resultados
-        </span>
-      </div>
-
-      <label className="field mobile-search-field">
-        <span>Buscar</span>
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="BRA20, Brazil, jogador"
-        />
-      </label>
-
-      <div className="search-results">
-        {sections.map((section) => (
-          <section className="sticker-group light" key={section.slug}>
-            <button
-              className="group-heading"
-              type="button"
-              onClick={() => onOpenSection(section)}
-            >
-              <span>{section.name}</span>
-              <span>{section.stickers.length}</span>
-            </button>
-            <div className="code-pill-grid">
-              {section.stickers.map((sticker) => (
-                <button
-                  className="code-pill soft"
-                  type="button"
-                  key={sticker.code}
-                  onClick={() => onOpenSection(section)}
-                >
-                  {sticker.code}
-                </button>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+        <div className="sticker-action-list">
+          <button
+            className="text-button primary"
+            type="button"
+            onClick={onAddDuplicate}
+          >
+            <Plus size={17} />
+            Adicionar repetida
+          </button>
+          <button
+            className="text-button"
+            type="button"
+            onClick={onRemoveDuplicate}
+            disabled={sticker.quantity <= 1}
+          >
+            <Minus size={17} />
+            Remover repetida
+          </button>
+          <button className="text-button" type="button" onClick={onMarkMissing}>
+            Marcar como faltando
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
@@ -955,47 +912,19 @@ function Metric({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function NavButton({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={`nav-button ${active ? "active" : ""}`}
-      type="button"
-      onClick={onClick}
-    >
-      {label}
-    </button>
-  );
-}
-
-function buildListShareText(collection: WebCollection, mode: ListMode): string {
-  const sections = filterCollectionSections(collection.sections, {
-    filter: mode,
-    query: "",
-  });
-  const title = mode === "missing" ? "Faltando" : "Repetidas";
-  const emptyText = mode === "missing" ? "Nada faltando." : "Sem repetidas.";
-  const lines = sections.map((section) => {
-    const codes = section.stickers.map((sticker) =>
-      mode === "duplicates"
-        ? `${sticker.code} x${sticker.quantity - 1}`
-        : sticker.code,
-    );
-    return `${section.name}: ${codes.join(", ")}`;
-  });
+function buildSectionDuplicateText(
+  collectionName: string,
+  section: WebSection,
+): string {
+  const duplicateCodes = section.stickers
+    .filter((sticker) => sticker.quantity > 1)
+    .map((sticker) => `${sticker.code} x${sticker.quantity - 1}`);
 
   return [
-    `*${collection.name}*`,
+    `*${collectionName}*`,
     "",
-    `*${title}*`,
-    ...(lines.length > 0 ? lines : [emptyText]),
+    `*Repetidas - ${section.name}*`,
+    ...(duplicateCodes.length > 0 ? duplicateCodes : ["Sem repetidas."]),
   ].join("\n");
 }
 

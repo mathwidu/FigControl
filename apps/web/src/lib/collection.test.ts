@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  filterSectionStickersByOwnership,
   filterCollectionSections,
   getOfflineMutationMessage,
   getSectionDisplayCode,
@@ -74,6 +75,24 @@ describe("summarizeSectionProgress", () => {
       duplicates: 1,
       percent: 67,
     });
+  });
+});
+
+describe("filterSectionStickersByOwnership", () => {
+  it("returns only missing stickers for the missing tab", () => {
+    expect(
+      filterSectionStickersByOwnership(sections[0], "missing").map(
+        (sticker) => sticker.code,
+      ),
+    ).toEqual(["BRA2"]);
+  });
+
+  it("returns owned and duplicate stickers for the owned tab", () => {
+    expect(
+      filterSectionStickersByOwnership(sections[0], "owned").map(
+        (sticker) => sticker.code,
+      ),
+    ).toEqual(["BRA1", "BRA3"]);
   });
 });
 

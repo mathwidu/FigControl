@@ -57,12 +57,28 @@ const apiHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
 };
 
-test("registers, marks a repeated sticker, navigates lists and copies share text", async ({
+test("registers, marks a missing sticker as owned, manages duplicates and copies section duplicates", async ({
   context,
   page,
 }) => {
   let collection = structuredClone(baseCollection);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
+  function updateSummaries() {
+    const stickers = collection.sections.flatMap((section) => section.stickers);
+    const baseStickers = stickers.filter((sticker) => sticker.isBaseAlbum);
+    const summarize = (items: typeof stickers) => {
+      const total = items.length;
+      const have = items.filter((sticker) => sticker.quantity > 0).length;
+      const missing = total - have;
+      const duplicates = items.filter((sticker) => sticker.quantity > 1).length;
+      const percent = total === 0 ? 0 : Math.round((have / total) * 100);
+      return { total, have, missing, duplicates, percent };
+    };
+
+    collection.summary.base = summarize(baseStickers);
+    collection.summary.tracked = summarize(stickers);
+  }
 
   await page.route("**/auth/register", async (route) => {
     await route.fulfill({
@@ -103,22 +119,9 @@ test("registers, marks a repeated sticker, navigates lists and copies share text
   await page.route(
     "**/me/collection/world-cup-2026/stickers/BRA20",
     async (route) => {
-      collection = structuredClone(baseCollection);
-      collection.sections[0].stickers[0].quantity = 2;
-      collection.summary.base = {
-        total: 2,
-        have: 1,
-        missing: 1,
-        duplicates: 1,
-        percent: 50,
-      };
-      collection.summary.tracked = {
-        total: 3,
-        have: 1,
-        missing: 2,
-        duplicates: 1,
-        percent: 33,
-      };
+      const body = route.request().postDataJSON() as { quantity: number };
+      collection.sections[0].stickers[0].quantity = body.quantity;
+      updateSummaries();
       await route.fulfill({ headers: apiHeaders, json: collection });
     },
   );
@@ -143,30 +146,35 @@ test("registers, marks a repeated sticker, navigates lists and copies share text
     page.getByRole("heading", { name: "Controle de Figurinhas 2026" }),
   ).toBeVisible();
   await page.getByRole("button", { name: /Brasil/ }).click();
-  await expect(page.getByText("BRA20")).toBeVisible();
-  await page.getByTitle("Aumentar BRA20").click();
+  await expect(page.getByRole("tab", { name: /Faltam 2/ })).toBeVisible();
+  await page.getByRole("button", { name: "Marcar BRA20 como tenho" }).click();
+
+  await page.getByRole("tab", { name: /Tenho 1/ }).click();
   await expect(
-    page.getByRole("button", { name: /BRA20 quantidade 2/ }),
+    page.getByRole("button", { name: "Abrir ações de BRA20" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Faltando" }).click();
+  await page.getByRole("tab", { name: /Faltam 1/ }).click();
   await expect(
     page.getByRole("button", { name: "BRA3", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: /BRA20 x1/ })).toHaveCount(0);
-
-  await page.getByRole("button", { name: "Repetidas" }).click();
-  const duplicatesView = page.locator(".grouped-view.duplicates");
-  await expect(
-    duplicatesView.getByRole("button", { name: /BRA20 x1/ }),
-  ).toBeVisible();
-  await expect(
-    duplicatesView.getByRole("button", { name: "BRA3", exact: true }),
   ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Marcar BRA3 como tenho" }),
+  ).toBeVisible();
 
-  await page.getByRole("button", { name: "Copiar" }).click();
+  await page.getByRole("tab", { name: /Tenho 1/ }).click();
+  await page.getByRole("button", { name: "Abrir ações de BRA20" }).click();
+  await page.getByRole("button", { name: "Adicionar repetida" }).click();
+  await expect(
+    page.getByRole("button", { name: "Abrir ações de BRA20" }),
+  ).toBeVisible();
+  await expect(page.getByText("1 repetida")).toBeVisible();
+  await page.getByRole("button", { name: "Ver repetidas" }).click();
+  await expect(page.getByText("BRA20 x1", { exact: true })).toBeVisible();
+
+  await page.getByTitle("Copiar repetidas").click();
   await expect(page.getByText("Lista de repetidas copiada.")).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-    .toContain("Brasil: BRA20 x1");
+    .toContain("BRA20 x1");
 });

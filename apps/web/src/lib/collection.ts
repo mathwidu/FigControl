@@ -1,4 +1,5 @@
 export type StickerFilter = "all" | "missing" | "have" | "duplicates";
+export type StickerOwnershipTab = "missing" | "owned";
 
 export interface WebSticker {
   code: string;
@@ -80,6 +81,15 @@ export function summarizeSectionProgress(section: WebSection): ProgressBucket {
   const percent = total === 0 ? 0 : Math.round((have / total) * 100);
 
   return { total, have, missing, duplicates, percent };
+}
+
+export function filterSectionStickersByOwnership(
+  section: WebSection,
+  tab: StickerOwnershipTab,
+): WebSticker[] {
+  return section.stickers.filter((sticker) =>
+    tab === "missing" ? sticker.quantity === 0 : sticker.quantity > 0,
+  );
 }
 
 export function getSectionDisplayCode(section: WebSection): string {

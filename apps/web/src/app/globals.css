@@ -200,6 +200,11 @@ a {
   font-weight: 850;
 }
 
+.text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .icon-button {
   width: 42px;
   padding: 0;
@@ -244,7 +249,6 @@ a {
 .album-app {
   display: grid;
   gap: 14px;
-  padding-bottom: 76px;
 }
 
 .album-hero {
@@ -441,6 +445,11 @@ a {
   transform: translateY(-1px);
 }
 
+.section-card.active {
+  outline: 3px solid rgba(6, 168, 79, 0.28);
+  outline-offset: 2px;
+}
+
 .flag-card {
   aspect-ratio: 16 / 9;
   border-radius: 12px;
@@ -542,6 +551,82 @@ a {
   text-transform: uppercase;
 }
 
+.detail-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  border: 1px solid #dbe7de;
+  border-radius: 16px;
+  background: #eef7f0;
+  padding: 7px;
+}
+
+.tab-button {
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 950;
+}
+
+.tab-button.active {
+  background: var(--green);
+  color: #ffffff;
+  box-shadow: 0 10px 28px rgba(2, 117, 61, 0.22);
+}
+
+.tab-button span {
+  min-width: 26px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 3px 8px;
+  font-size: 0.8rem;
+}
+
+.tab-button:not(.active) span {
+  background: #ffffff;
+}
+
+.section-action-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.repeat-button {
+  min-height: 36px;
+  border-color: rgba(6, 168, 79, 0.22);
+  background: #f2fff7;
+  color: var(--green-dark);
+}
+
+.duplicates-panel {
+  border: 1px solid rgba(6, 168, 79, 0.2);
+  border-radius: 14px;
+  background: #f5fff9;
+  color: var(--ink);
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.duplicates-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.duplicates-panel-heading strong {
+  text-transform: uppercase;
+  font-size: 0.82rem;
+}
+
 .sticker-grid.compact {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -566,6 +651,11 @@ a {
 .sticker-tile.duplicate {
   border-color: var(--navy);
   background: #eef2ff;
+}
+
+.sticker-tile.transferring {
+  animation: cardTransfer 360ms ease both;
+  box-shadow: 0 18px 36px rgba(6, 168, 79, 0.24);
 }
 
 .sticker-card-button {
@@ -593,6 +683,26 @@ a {
   font-size: clamp(1.5rem, 8vw, 2.1rem);
   line-height: 1;
   font-weight: 900;
+}
+
+.sticker-card-meta {
+  min-height: 22px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: #334155;
+  padding: 4px 9px;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.sticker-tile.have .sticker-card-meta {
+  background: rgba(6, 168, 79, 0.14);
+  color: var(--green-dark);
+}
+
+.sticker-tile.duplicate .sticker-card-meta {
+  background: var(--navy);
+  color: #ffffff;
 }
 
 .duplicate-badge {
@@ -625,6 +735,26 @@ a {
   justify-content: center;
   gap: 4px;
   font-weight: 950;
+}
+
+.section-empty-state {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  color: #64748b;
+  text-align: center;
+  font-weight: 900;
+}
+
+.section-empty-state svg {
+  width: 54px;
+  height: 54px;
+  border: 4px solid rgba(6, 168, 79, 0.16);
+  border-radius: 999px;
+  color: var(--green-dark);
+  padding: 10px;
 }
 
 .grouped-view {
@@ -726,6 +856,12 @@ a {
   font-weight: 950;
 }
 
+.code-pill.static {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .code-pill.soft {
   border: 1px solid var(--line);
   background: var(--green-soft);
@@ -770,6 +906,59 @@ a {
 .nav-button.active {
   background: var(--green);
   color: #ffffff;
+}
+
+.sticker-actions-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: end center;
+  background: rgba(15, 23, 42, 0.42);
+  padding: 16px;
+}
+
+.sticker-actions-panel {
+  width: min(460px, 100%);
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 16px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.26);
+}
+
+.sticker-actions-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.sticker-actions-heading h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.sticker-action-list {
+  display: grid;
+  gap: 10px;
+}
+
+.sticker-action-list .text-button {
+  width: 100%;
+}
+
+@keyframes cardTransfer {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  55% {
+    transform: translateY(-10px) scale(1.04);
+  }
+  100% {
+    transform: translateX(42px) translateY(-16px) scale(0.9);
+    opacity: 0;
+  }
 }
 
 .footer {
@@ -869,7 +1058,6 @@ a {
   }
 
   .album-app.has-active-section .album-hero,
-  .album-app.has-active-section .app-search,
   .album-app.has-active-section .primary-pane,
   .album-app.has-active-section .bottom-nav {
     display: none;
