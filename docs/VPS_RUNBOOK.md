@@ -136,6 +136,15 @@ Se o repositorio se chamar `mathwidu/FigControl`, os defaults geram:
 
 Esses nomes ja batem com as stacks deste projeto. Se usar outro nome de repositorio, configure as duas variables.
 
+## Segurança operacional
+
+- Mantenha a API com `replicas: 1` enquanto o rate limit for em memoria.
+- Se aumentar replicas, migre o rate limit para um store compartilhado antes.
+- Use secrets JWT diferentes entre DEV e PROD, com 32 caracteres ou mais.
+- Use chaves Resend diferentes por ambiente quando possivel.
+- Monitore volume de envio no Resend nas primeiras horas depois da publicacao.
+- Revise `docs/SECURITY_REVIEW.md` antes de promover uma nova versao para producao.
+
 ### Primeiro deploy
 
 O workflow atual atualiza services ja existentes no Swarm. Na primeira subida, siga esta ordem:

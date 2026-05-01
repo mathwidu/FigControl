@@ -4,12 +4,12 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'FigControl Copa 2026',
-  description: 'Controle sincronizado do album Panini FIFA World Cup 2026.',
+  description: 'Controle sincronizado do álbum Panini FIFA World Cup 2026.',
   applicationName: 'FigControl',
   manifest: '/manifest.webmanifest',
   openGraph: {
     title: 'FigControl Copa 2026',
-    description: 'Controle suas figurinhas da Copa 2026 por selecao, faltantes e repetidas.',
+    description: 'Controle suas figurinhas da Copa 2026 por seleção, faltantes e repetidas.',
     type: 'website'
   }
 };
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="brand-mark">FC</div>
                 <div>
                   <div className="brand-title">FigControl Copa 2026</div>
-                  <div className="brand-subtitle">Album, faltantes e repetidas</div>
+                  <div className="brand-subtitle">Álbum, faltantes e repetidas</div>
                 </div>
               </Link>
             </div>
@@ -44,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="main">{children}</main>
           <footer className="footer">
             <div className="footer-inner">
-              <span>FigControl 2026. Projeto de fã.</span>
+              <span>FigControl 2026. Projeto independente de fã.</span>
               <nav aria-label="Links legais">
                 <Link href="/privacidade">Privacidade</Link>
                 <Link href="/termos">Termos</Link>

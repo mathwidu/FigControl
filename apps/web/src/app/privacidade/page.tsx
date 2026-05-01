@@ -3,15 +3,39 @@ export default function PrivacyPage() {
     <article className="legal-page">
       <h1>Privacidade</h1>
       <p>
-        O FigControl armazena email, senha protegida por hash e o progresso da sua colecao para sincronizar o
-        album entre dispositivos.
+        O FigControl armazena e-mail, senha protegida por hash e o progresso da
+        sua coleção para sincronizar o álbum entre dispositivos.
       </p>
       <p>
-        Nao vendemos dados pessoais. Logs tecnicos podem ser usados para seguranca, diagnostico e melhoria do
-        servico.
+        Não vendemos dados pessoais. Logs técnicos podem ser usados para
+        segurança, diagnóstico, prevenção de abuso e melhoria do serviço.
       </p>
-      <p>Emails transacionais, como verificacao de conta e redefinicao de senha, podem ser enviados via Resend.</p>
-      <p>Voce pode solicitar exclusao da conta e dos dados associados pelo canal de contato do projeto.</p>
+      <p>
+        E-mails transacionais, como verificação de conta e redefinição de senha,
+        podem ser enviados por um provedor externo, como o Resend.
+      </p>
+      <p>
+        Você pode solicitar exclusão da conta e dos dados associados pelos
+        canais de contato do responsável pelo projeto.
+      </p>
+      <ul>
+        <li>
+          GitHub:{' '}
+          <a href="https://github.com/mathwidu" rel="noreferrer" target="_blank">
+            github.com/mathwidu
+          </a>
+        </li>
+        <li>
+          LinkedIn:{' '}
+          <a
+            href="https://www.linkedin.com/in/matheus-wduarte/"
+            rel="noreferrer"
+            target="_blank"
+          >
+            linkedin.com/in/matheus-wduarte
+          </a>
+        </li>
+      </ul>
     </article>
   );
 }

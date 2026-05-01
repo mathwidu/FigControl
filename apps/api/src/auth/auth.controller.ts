@@ -21,13 +21,28 @@ const minute = 60_000;
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @AuthRateLimit({ key: 'register', limit: 5, windowMs: 60 * minute, includeBodyEmail: true })
+  @AuthRateLimit({
+    key: 'register:ip-email',
+    limit: 3,
+    windowMs: 60 * minute,
+    includeBodyEmail: true,
+    extraBuckets: [
+      { key: 'register:ip', identity: 'ip', limit: 10, windowMs: 60 * minute },
+      { key: 'register:email', identity: 'body-email', limit: 3, windowMs: 60 * minute }
+    ]
+  })
   @Post('auth/register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto.email, dto.password, dto.confirmPassword);
   }
 
-  @AuthRateLimit({ key: 'login', limit: 8, windowMs: 15 * minute, includeBodyEmail: true })
+  @AuthRateLimit({
+    key: 'login:ip-email',
+    limit: 8,
+    windowMs: 15 * minute,
+    includeBodyEmail: true,
+    extraBuckets: [{ key: 'login:ip', identity: 'ip', limit: 50, windowMs: 15 * minute }]
+  })
   @Post('auth/login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
@@ -35,9 +50,13 @@ export class AuthController {
 
   @AuthRateLimit({
     key: 'email-verification-resend',
-    limit: 5,
+    limit: 3,
     windowMs: 60 * minute,
-    includeBodyEmail: true
+    includeBodyEmail: true,
+    extraBuckets: [
+      { key: 'email-verification-resend:ip', identity: 'ip', limit: 10, windowMs: 60 * minute },
+      { key: 'email-verification-resend:email', identity: 'body-email', limit: 3, windowMs: 60 * minute }
+    ]
   })
   @Post('auth/email-verifications/resend')
   resendEmailVerification(@Body() dto: EmailRequestDto) {
@@ -50,7 +69,16 @@ export class AuthController {
     return this.authService.confirmEmailVerification(dto.token);
   }
 
-  @AuthRateLimit({ key: 'password-reset-request', limit: 5, windowMs: 60 * minute, includeBodyEmail: true })
+  @AuthRateLimit({
+    key: 'password-reset-request:ip-email',
+    limit: 3,
+    windowMs: 60 * minute,
+    includeBodyEmail: true,
+    extraBuckets: [
+      { key: 'password-reset-request:ip', identity: 'ip', limit: 10, windowMs: 60 * minute },
+      { key: 'password-reset-request:email', identity: 'body-email', limit: 3, windowMs: 60 * minute }
+    ]
+  })
   @Post('auth/password-resets')
   requestPasswordReset(@Body() dto: EmailRequestDto) {
     return this.authService.requestPasswordReset(dto.email);
@@ -62,11 +90,13 @@ export class AuthController {
     return this.authService.confirmPasswordReset(dto.token, dto.password, dto.confirmPassword);
   }
 
+  @AuthRateLimit({ key: 'refresh', limit: 120, windowMs: 15 * minute })
   @Post('auth/refresh')
   refresh(@Body() dto: RefreshDto) {
     return this.authService.refresh(dto.refreshToken);
   }
 
+  @AuthRateLimit({ key: 'logout', limit: 120, windowMs: 15 * minute })
   @Post('auth/logout')
   logout(@Body() dto: LogoutDto) {
     return this.authService.logout(dto.refreshToken);

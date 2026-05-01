@@ -212,3 +212,81 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toContain("BRA20 x1");
 });
+
+test("keeps the desktop sticker detail pane scrollable independently", async ({
+  page,
+}) => {
+  const collection = buildOverflowCollection();
+
+  await page.addInitScript((initialCollection) => {
+    localStorage.setItem(
+      "figcontrol.auth.v1",
+      JSON.stringify({
+        user: { id: "user-1", email: "teste@example.com" },
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+      }),
+    );
+    localStorage.setItem(
+      "figcontrol.collection.world-cup-2026.v1",
+      JSON.stringify(initialCollection),
+    );
+  }, collection);
+
+  await page.route(/\/me\/collection\/world-cup-2026$/, async (route) => {
+    await route.fulfill({ headers: apiHeaders, json: collection });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: /Brasil/ }).click();
+
+  const detailPane = page.locator(".detail-pane");
+  const initialPageScroll = await page.evaluate(() => window.scrollY);
+  const metrics = await detailPane.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  }));
+
+  expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+
+  await detailPane.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+
+  await expect(
+    page.getByRole("button", { name: "Marcar BRA20 como tenho" }),
+  ).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBe(initialPageScroll);
+});
+
+function buildOverflowCollection() {
+  const stickers = Array.from({ length: 20 }, (_, index) => ({
+    code: `BRA${index + 1}`,
+    localNumber: index + 1,
+    label: `Figurinha Brasil ${index + 1}`,
+    isBaseAlbum: true,
+    special: index === 0,
+    quantity: 0,
+  }));
+
+  return {
+    slug: "world-cup-2026",
+    name: "FIFA World Cup 2026",
+    baseStickerCount: 20,
+    trackedStickerCount: 20,
+    summary: {
+      base: { total: 20, have: 0, missing: 20, duplicates: 0, percent: 0 },
+      tracked: { total: 20, have: 0, missing: 20, duplicates: 0, percent: 0 },
+    },
+    sections: [
+      {
+        slug: "brazil",
+        name: "Brasil",
+        kind: "TEAM",
+        stickers,
+      },
+    ],
+  };
+}

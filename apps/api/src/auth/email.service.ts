@@ -47,7 +47,8 @@ export class EmailService {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new ServiceUnavailableException(`Resend email request failed: ${body || response.status}`);
+      console.error(`[email:resend] status=${response.status} body=${body || '<empty>'}`);
+      throw new ServiceUnavailableException('Could not send authentication email.');
     }
   }
 }

@@ -1,4 +1,4 @@
-import { IsArray, IsInt, IsString, Max, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsInt, IsString, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class SetStickerQuantityDto {
@@ -10,6 +10,7 @@ export class SetStickerQuantityDto {
 
 export class BulkStickerQuantityItemDto {
   @IsString()
+  @MaxLength(24)
   stickerId!: string;
 
   @IsInt()
@@ -20,6 +21,7 @@ export class BulkStickerQuantityItemDto {
 
 export class BulkStickerQuantityDto {
   @IsArray()
+  @ArrayMaxSize(1_000)
   @ValidateNested({ each: true })
   @Type(() => BulkStickerQuantityItemDto)
   updates!: BulkStickerQuantityItemDto[];

@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'FigControl Copa 2026',
     short_name: 'FigControl',
-    description: 'Controle sincronizado do album Panini FIFA World Cup 2026.',
+    description: 'Controle sincronizado do álbum Panini FIFA World Cup 2026.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

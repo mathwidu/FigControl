@@ -134,10 +134,22 @@ a {
   font-size: clamp(1.5rem, 4vw, 2.1rem);
 }
 
+.legal-page h2 {
+  margin: 28px 0 8px;
+  font-size: clamp(1.15rem, 3vw, 1.45rem);
+}
+
 .auth-panel p,
 .legal-page p,
 .legal-page li {
   color: #334155;
+}
+
+.legal-page a {
+  color: var(--green-dark);
+  font-weight: 850;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 .form-grid {
@@ -1173,6 +1185,15 @@ a {
   .detail-pane {
     position: sticky;
     top: 84px;
+    max-height: calc(100vh - 104px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 2px;
+    scrollbar-gutter: stable;
+  }
+
+  .detail-pane .section-detail {
+    min-height: auto;
   }
 
   .bottom-nav {

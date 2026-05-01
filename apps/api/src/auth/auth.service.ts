@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   ForbiddenException,
   Injectable,
   ServiceUnavailableException,
@@ -34,7 +33,10 @@ export class AuthService {
     const normalizedEmail = normalizeEmail(email);
     const existing = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
-      throw new ConflictException('Email already registered.');
+      if (!existing.emailVerifiedAt) {
+        await this.requestEmailVerification(existing.email);
+      }
+      return this.genericAuthEmailResponse();
     }
 
     const user = await this.prisma.user.create({
