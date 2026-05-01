@@ -833,6 +833,11 @@ a {
   overflow: hidden;
 }
 
+.sticker-tile.missing {
+  border-color: #dc2626;
+  background: #fff1f2;
+}
+
 .sticker-tile.have {
   border-color: #038846;
   background: #e8fff0;
@@ -844,7 +849,7 @@ a {
 }
 
 .sticker-tile.transferring {
-  animation: cardTransfer 360ms ease both;
+  animation: cardConfirm 320ms ease both;
   box-shadow: 0 18px 36px rgba(6, 168, 79, 0.24);
 }
 
@@ -883,6 +888,11 @@ a {
   padding: 4px 9px;
   font-size: 0.72rem;
   font-weight: 950;
+}
+
+.sticker-tile.missing .sticker-card-meta {
+  background: rgba(220, 38, 38, 0.14);
+  color: #991b1b;
 }
 
 .sticker-tile.have .sticker-card-meta {
@@ -1138,16 +1148,15 @@ a {
   width: 100%;
 }
 
-@keyframes cardTransfer {
+@keyframes cardConfirm {
   0% {
-    transform: translateY(0) scale(1);
+    transform: scale(0.98);
   }
   55% {
-    transform: translateY(-10px) scale(1.04);
+    transform: scale(1.04);
   }
   100% {
-    transform: translateX(42px) translateY(-16px) scale(0.9);
-    opacity: 0;
+    transform: scale(1);
   }
 }
 

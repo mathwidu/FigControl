@@ -87,9 +87,11 @@ export function filterSectionStickersByOwnership(
   section: WebSection,
   tab: StickerOwnershipTab,
 ): WebSticker[] {
-  return section.stickers.filter((sticker) =>
-    tab === "missing" ? sticker.quantity === 0 : sticker.quantity > 0,
-  );
+  if (tab === "missing") {
+    return section.stickers;
+  }
+
+  return section.stickers.filter((sticker) => sticker.quantity > 0);
 }
 
 export function getSectionDisplayCode(section: WebSection): string {

@@ -84,9 +84,9 @@ export function AlbumApp() {
     null,
   );
   const [detailTab, setDetailTab] = useState<DetailTab>("missing");
-  const [transferringStickerCode, setTransferringStickerCode] = useState<
-    string | null
-  >(null);
+  const [pendingOwnedStickerCodes, setPendingOwnedStickerCodes] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [authSubmitting, setAuthSubmitting] = useState(false);
@@ -145,7 +145,7 @@ export function AlbumApp() {
       event.preventDefault();
       setActiveSectionSlug(null);
       setDetailTab("missing");
-      setTransferringStickerCode(null);
+      setPendingOwnedStickerCodes(new Set());
       window.requestAnimationFrame(() => {
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
@@ -314,12 +314,19 @@ export function AlbumApp() {
   }
 
   function markMissingAsOwned(sticker: WebSticker) {
-    setTransferringStickerCode(sticker.code);
-    window.setTimeout(() => {
-      void changeQuantity(sticker, 1).finally(() => {
-        setTransferringStickerCode(null);
+    setPendingOwnedStickerCodes((current) => {
+      const next = new Set(current);
+      next.add(sticker.code);
+      return next;
+    });
+
+    void changeQuantity(sticker, 1).finally(() => {
+      setPendingOwnedStickerCodes((current) => {
+        const next = new Set(current);
+        next.delete(sticker.code);
+        return next;
       });
-    }, 300);
+    });
   }
 
   function logout() {
@@ -626,7 +633,7 @@ export function AlbumApp() {
               collectionName={collection.name}
               section={activeSection}
               activeTab={detailTab}
-              transferringStickerCode={transferringStickerCode}
+              pendingOwnedStickerCodes={pendingOwnedStickerCodes}
               onBack={() => setActiveSectionSlug(null)}
               onPrevious={() => openAdjacentSection(-1)}
               onNext={() => openAdjacentSection(1)}
@@ -795,7 +802,7 @@ function SectionDetail({
   collectionName,
   section,
   activeTab,
-  transferringStickerCode,
+  pendingOwnedStickerCodes,
   onBack,
   onPrevious,
   onNext,
@@ -808,7 +815,7 @@ function SectionDetail({
   collectionName: string;
   section: WebSection;
   activeTab: DetailTab;
-  transferringStickerCode: string | null;
+  pendingOwnedStickerCodes: ReadonlySet<string>;
   onBack: () => void;
   onPrevious: () => void;
   onNext: () => void;
@@ -971,12 +978,24 @@ function SectionDetail({
               key={sticker.code}
               sticker={sticker}
               mode={activeTab}
-              transferring={transferringStickerCode === sticker.code}
-              onClick={() =>
-                activeTab === "missing"
-                  ? onMarkOwned(sticker)
-                  : setSelectedStickerCode(sticker.code)
-              }
+              transferring={pendingOwnedStickerCodes.has(sticker.code)}
+              onClick={() => {
+                if (activeTab !== "missing") {
+                  setSelectedStickerCode(sticker.code);
+                  return;
+                }
+
+                if (pendingOwnedStickerCodes.has(sticker.code)) {
+                  return;
+                }
+
+                if (sticker.quantity === 0) {
+                  onMarkOwned(sticker);
+                  return;
+                }
+
+                setSelectedStickerCode(sticker.code);
+              }}
             />
           ))}
         </div>
@@ -1031,8 +1050,10 @@ function StickerTile({
         ? "duplicate"
         : "missing";
   const actionLabel =
-    mode === "missing"
-      ? `Marcar ${sticker.code} como tenho`
+    mode === "missing" && transferring
+      ? `Salvando ${sticker.code} como tenho`
+      : mode === "missing" && sticker.quantity === 0
+        ? `Marcar ${sticker.code} como tenho`
       : `Abrir ações de ${sticker.code}`;
 
   return (

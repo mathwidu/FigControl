@@ -190,11 +190,14 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
 
   await page.getByRole("tab", { name: /Faltam 1/ }).click();
   await expect(
-    page.getByRole("button", { name: "BRA3", exact: true }),
-  ).toHaveCount(0);
+    page.getByRole("button", { name: "Abrir ações de BRA20" }),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Marcar BRA3 como tenho" }),
   ).toBeVisible();
+  await expect(
+    page.locator(".sticker-grid.compact .sticker-code"),
+  ).toHaveText(["BRA20", "BRA3"]);
 
   await page.getByRole("tab", { name: /Tenho 1/ }).click();
   await page.getByRole("button", { name: "Abrir ações de BRA20" }).click();

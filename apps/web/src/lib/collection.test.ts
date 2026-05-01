@@ -79,12 +79,12 @@ describe("summarizeSectionProgress", () => {
 });
 
 describe("filterSectionStickersByOwnership", () => {
-  it("returns only missing stickers for the missing tab", () => {
+  it("keeps every sticker visible in the missing tab to avoid grid shifts", () => {
     expect(
       filterSectionStickersByOwnership(sections[0], "missing").map(
         (sticker) => sticker.code,
       ),
-    ).toEqual(["BRA2"]);
+    ).toEqual(["BRA1", "BRA2", "BRA3"]);
   });
 
   it("returns owned and duplicate stickers for the owned tab", () => {
