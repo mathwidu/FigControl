@@ -151,7 +151,8 @@ a {
   gap: 6px;
 }
 
-.field span {
+.field span,
+.field > label {
   color: #475569;
   font-size: 0.82rem;
   font-weight: 800;
@@ -181,6 +182,111 @@ a {
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.auth-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0 4px;
+  border: 1px solid #dbe7de;
+  border-radius: 14px;
+  padding: 5px;
+  background: #f8fbf7;
+}
+
+.auth-mode-tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #526174;
+  font-weight: 900;
+}
+
+.auth-mode-tabs button.active {
+  background: var(--green-dark);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(2, 117, 61, 0.18);
+}
+
+.password-input-wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  border: 1px solid #cbd7ce;
+  border-radius: 12px;
+  background: #fbfdfa;
+  overflow: hidden;
+}
+
+.password-input-wrap:focus-within {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(6, 168, 79, 0.16);
+}
+
+.password-input-wrap input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.password-input-wrap input:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.password-toggle {
+  width: 42px;
+  min-height: 42px;
+  border: 0;
+  background: transparent;
+  color: #526174;
+  display: grid;
+  place-items: center;
+}
+
+.field-error {
+  margin: -2px 0 0;
+  color: #b42318;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.password-requirements {
+  list-style: none;
+  margin: 0;
+  padding: 2px 0 0;
+  display: grid;
+  gap: 6px;
+}
+
+.password-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.password-requirements li svg {
+  color: #b42318;
+}
+
+.password-requirements li.met {
+  color: #02753d;
+}
+
+.password-requirements li.met svg {
+  color: #02753d;
+}
+
+.auth-success strong {
+  color: var(--ink);
 }
 
 .icon-button,

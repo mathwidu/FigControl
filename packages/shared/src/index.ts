@@ -64,6 +64,66 @@ export interface CatalogValidationResult {
   errors: string[];
 }
 
+export type PasswordRequirementId = 'minLength' | 'uppercase' | 'lowercase' | 'number' | 'symbol';
+
+export interface PasswordRequirement {
+  id: PasswordRequirementId;
+  label: string;
+  test: (password: string) => boolean;
+}
+
+export interface PasswordRequirementResult {
+  id: PasswordRequirementId;
+  label: string;
+  met: boolean;
+}
+
+export interface PasswordPolicyResult {
+  valid: boolean;
+  requirements: PasswordRequirementResult[];
+}
+
+export const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
+  {
+    id: 'minLength',
+    label: 'Pelo menos 8 caracteres',
+    test: (password) => password.length >= 8
+  },
+  {
+    id: 'uppercase',
+    label: 'Uma letra maiuscula',
+    test: (password) => /[A-Z]/.test(password)
+  },
+  {
+    id: 'lowercase',
+    label: 'Uma letra minuscula',
+    test: (password) => /[a-z]/.test(password)
+  },
+  {
+    id: 'number',
+    label: 'Um numero',
+    test: (password) => /[0-9]/.test(password)
+  },
+  {
+    id: 'symbol',
+    label: 'Um simbolo especial',
+    test: (password) => /[^A-Za-z0-9]/.test(password)
+  }
+];
+
+export function evaluatePasswordPolicy(password: string): PasswordPolicyResult {
+  const requirements = PASSWORD_REQUIREMENTS.map((requirement) => ({
+    id: requirement.id,
+    label: requirement.label,
+    met: requirement.test(password)
+  }));
+
+  return {
+    valid: requirements.every((requirement) => requirement.met),
+    requirements
+  };
+}
+
 export function summarizeProgress(items: ProgressInput[]): ProgressSummary {
   const baseItems = items.filter((item) => item.isBaseAlbum);
 

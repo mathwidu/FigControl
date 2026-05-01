@@ -11,7 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildEmailVerificationMessage, buildPasswordResetMessage } from './email-messages';
 import { EmailService } from './email.service';
-import { assertPasswordsMatch, hashPassword, verifyPassword } from './passwords';
+import { assertPasswordPolicy, assertPasswordsMatch, hashPassword, verifyPassword } from './passwords';
 import { createOneTimeToken, createRefreshToken, hashToken } from './tokens';
 
 interface AuthUser {
@@ -30,6 +30,7 @@ export class AuthService {
 
   async register(email: string, password: string, confirmPassword: string) {
     assertPasswordsMatch(password, confirmPassword);
+    assertPasswordPolicy(password);
     const normalizedEmail = normalizeEmail(email);
     const existing = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
@@ -122,6 +123,7 @@ export class AuthService {
 
   async confirmPasswordReset(token: string, password: string, confirmPassword: string) {
     assertPasswordsMatch(password, confirmPassword);
+    assertPasswordPolicy(password);
     const storedToken = await this.prisma.passwordResetToken.findUnique({
       where: { tokenHash: hashToken(token) },
       include: { user: true }

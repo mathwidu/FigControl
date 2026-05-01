@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { buildEmailVerificationMessage, buildPasswordResetMessage } from '../src/auth/email-messages';
-import { assertPasswordsMatch } from '../src/auth/passwords';
+import { assertPasswordPolicy, assertPasswordsMatch } from '../src/auth/passwords';
 
 describe('password confirmation', () => {
   it('rejects account flows when password confirmation differs', () => {
@@ -10,6 +10,16 @@ describe('password confirmation', () => {
 
   it('accepts matching password confirmation', () => {
     expect(() => assertPasswordsMatch('senha-forte-123', 'senha-forte-123')).not.toThrow();
+  });
+});
+
+describe('password policy', () => {
+  it('rejects passwords missing uppercase, number or symbol requirements', () => {
+    expect(() => assertPasswordPolicy('senhaforte')).toThrow(BadRequestException);
+  });
+
+  it('accepts a password matching all security requirements', () => {
+    expect(() => assertPasswordPolicy('Senha-forte-123!')).not.toThrow();
   });
 });
 

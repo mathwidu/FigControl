@@ -127,19 +127,30 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
   );
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Criar conta" }).click();
+  await page.getByRole("tab", { name: "Criar conta" }).click();
   await expect(
-    page.getByRole("button", { name: "Ja tenho conta" }),
+    page.getByRole("tab", { name: "Entrar" }),
   ).toBeVisible();
   await page.getByLabel("Email").fill("teste@example.com");
-  await page.getByLabel("Senha", { exact: true }).fill("senha-forte-123");
-  await page.getByLabel("Confirmar senha").fill("senha-forte-123");
+  await page.getByLabel("Senha", { exact: true }).fill("senhaforte");
+  await expect(page.getByText("Uma letra maiuscula")).toBeVisible();
+  await expect(page.getByText("Um simbolo especial")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Criar conta" })).toBeDisabled();
+
+  await page.getByRole("button", { name: "Mostrar senha" }).first().click();
+  await expect(page.getByLabel("Senha", { exact: true })).toHaveAttribute(
+    "type",
+    "text",
+  );
+  await page.getByLabel("Senha", { exact: true }).fill("Senha-forte-123!");
+  await page.getByLabel("Confirmar senha").fill("Senha-forte-123!");
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(
-    page.getByText("Conta criada. Verifique seu email antes de entrar."),
+    page.getByRole("heading", { name: "Verifique seu email" }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Entrar" }).click();
 
-  await page.getByLabel("Senha", { exact: true }).fill("senha-forte-123");
+  await page.getByLabel("Senha", { exact: true }).fill("Senha-forte-123!");
   await page.getByRole("button", { name: "Entrar" }).click();
 
   await expect(

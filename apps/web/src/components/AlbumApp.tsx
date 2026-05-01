@@ -15,6 +15,7 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
+import { evaluatePasswordPolicy } from "@figcontrol/shared";
 import {
   type CSSProperties,
   FormEvent,
@@ -50,6 +51,7 @@ import {
   saveAuth,
   saveCollection,
 } from "../lib/storage";
+import { PasswordField } from "./PasswordField";
 
 type AuthMode = "login" | "register" | "forgot";
 type DetailTab = StickerOwnershipTab;
@@ -70,6 +72,9 @@ export function AlbumApp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [registrationEmail, setRegistrationEmail] = useState<string | null>(
+    null,
+  );
   const [collection, setCollection] = useState<WebCollection | null>(null);
   const [activeSectionSlug, setActiveSectionSlug] = useState<string | null>(
     null,
@@ -80,6 +85,7 @@ export function AlbumApp() {
   >(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [authSubmitting, setAuthSubmitting] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [installEvent, setInstallEvent] = useState<Event | null>(null);
 
@@ -164,6 +170,7 @@ export function AlbumApp() {
     event.preventDefault();
     setError(null);
     setNotice(null);
+    setAuthSubmitting(true);
     try {
       if (authMode === "forgot") {
         await requestPasswordReset(email);
@@ -174,13 +181,16 @@ export function AlbumApp() {
       }
 
       if (authMode === "register") {
+        if (!evaluatePasswordPolicy(password).valid) {
+          setError("A senha ainda nao cumpre todos os requisitos.");
+          return;
+        }
         if (password !== confirmPassword) {
           setError("A confirmacao de senha precisa ser igual a senha.");
           return;
         }
         await register(email, password, confirmPassword);
-        setNotice("Conta criada. Verifique seu email antes de entrar.");
-        setAuthMode("login");
+        setRegistrationEmail(email);
         setPassword("");
         setConfirmPassword("");
         return;
@@ -197,14 +207,17 @@ export function AlbumApp() {
           ? authError.message
           : "Falha na autenticacao.",
       );
+    } finally {
+      setAuthSubmitting(false);
     }
   }
 
-  async function resendVerification() {
+  async function resendVerification(targetEmail = email) {
     setError(null);
     setNotice(null);
+    setAuthSubmitting(true);
     try {
-      await requestEmailVerification(email);
+      await requestEmailVerification(targetEmail);
       setNotice("Se o email existir, enviamos um novo link de verificacao.");
     } catch (requestError) {
       setError(
@@ -212,11 +225,14 @@ export function AlbumApp() {
           ? requestError.message
           : "Falha ao reenviar verificacao.",
       );
+    } finally {
+      setAuthSubmitting(false);
     }
   }
 
   function switchAuthMode(nextMode: AuthMode) {
     setAuthMode(nextMode);
+    setRegistrationEmail(null);
     setError(null);
     setNotice(null);
     setPassword("");
@@ -328,6 +344,56 @@ export function AlbumApp() {
   }
 
   if (!auth) {
+    if (registrationEmail) {
+      return (
+        <section className="auth-panel auth-success" aria-labelledby="auth-title">
+          <p className="eyebrow">Conta criada</p>
+          <h1 id="auth-title">Verifique seu email</h1>
+          <p>
+            Enviamos um link de confirmacao para <strong>{registrationEmail}</strong>.
+            Depois de confirmar, voce ja pode entrar e sincronizar seu album.
+          </p>
+          {notice ? <div className="notice">{notice}</div> : null}
+          {error ? <div className="notice error">{error}</div> : null}
+          <div className="button-row">
+            <button
+              className="text-button primary"
+              type="button"
+              onClick={() => {
+                setRegistrationEmail(null);
+                setAuthMode("login");
+                setNotice(null);
+                setError(null);
+              }}
+            >
+              Entrar
+            </button>
+            <button
+              className="text-button"
+              type="button"
+              onClick={() => void resendVerification(registrationEmail)}
+              disabled={authSubmitting}
+            >
+              {authSubmitting ? "Enviando..." : "Reenviar email"}
+            </button>
+          </div>
+        </section>
+      );
+    }
+
+    const passwordPolicy = evaluatePasswordPolicy(password);
+    const confirmPasswordError =
+      authMode === "register" && confirmPassword && password !== confirmPassword
+        ? "As senhas precisam ser iguais."
+        : null;
+    const submitDisabled =
+      authSubmitting ||
+      (authMode === "register" &&
+        (!passwordPolicy.valid ||
+          password.length === 0 ||
+          confirmPassword.length === 0 ||
+          password !== confirmPassword));
+
     return (
       <section className="auth-panel" aria-labelledby="auth-title">
         <h1 id="auth-title">FigControl Copa 2026</h1>
@@ -336,6 +402,28 @@ export function AlbumApp() {
             ? "Informe seu email para receber o link de redefinicao."
             : "Entre para sincronizar sua colecao."}
         </p>
+        {authMode !== "forgot" ? (
+          <div className="auth-mode-tabs" role="tablist" aria-label="Modo de acesso">
+            <button
+              className={authMode === "login" ? "active" : ""}
+              type="button"
+              role="tab"
+              aria-selected={authMode === "login"}
+              onClick={() => switchAuthMode("login")}
+            >
+              Entrar
+            </button>
+            <button
+              className={authMode === "register" ? "active" : ""}
+              type="button"
+              role="tab"
+              aria-selected={authMode === "register"}
+              onClick={() => switchAuthMode("register")}
+            >
+              Criar conta
+            </button>
+          </div>
+        ) : null}
         {notice ? <div className="notice">{notice}</div> : null}
         {error ? <div className="notice error">{error}</div> : null}
         <form className="form-grid" onSubmit={handleAuth}>
@@ -349,45 +437,44 @@ export function AlbumApp() {
             />
           </label>
           {authMode !== "forgot" ? (
-            <label className="field">
-              <span>Senha</span>
-              <input
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                type="password"
-                minLength={8}
-                required
-              />
-            </label>
+            <PasswordField
+              label="Senha"
+              value={password}
+              onChange={setPassword}
+              autoComplete={
+                authMode === "login" ? "current-password" : "new-password"
+              }
+              showPolicy={authMode === "register"}
+              disabled={authSubmitting}
+            />
           ) : null}
           {authMode === "register" ? (
-            <label className="field">
-              <span>Confirmar senha</span>
-              <input
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                type="password"
-                minLength={8}
-                required
-              />
-            </label>
+            <PasswordField
+              label="Confirmar senha"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              autoComplete="new-password"
+              error={confirmPasswordError}
+              disabled={authSubmitting}
+            />
           ) : null}
           <div className="button-row">
-            <button className="text-button primary" type="submit">
-              {authMode === "login"
-                ? "Entrar"
-                : authMode === "register"
-                  ? "Criar conta"
-                  : "Enviar link"}
-            </button>
             <button
-              className="text-button"
-              type="button"
-              onClick={() =>
-                switchAuthMode(authMode === "login" ? "register" : "login")
-              }
+              className="text-button primary"
+              type="submit"
+              disabled={submitDisabled}
             >
-              {authMode === "login" ? "Criar conta" : "Ja tenho conta"}
+              {authSubmitting
+                ? authMode === "login"
+                  ? "Entrando..."
+                  : authMode === "register"
+                    ? "Criando..."
+                    : "Enviando..."
+                : authMode === "login"
+                  ? "Entrar"
+                  : authMode === "register"
+                    ? "Criar conta"
+                    : "Enviar link"}
             </button>
             {authMode === "login" ? (
               <button
@@ -402,9 +489,20 @@ export function AlbumApp() {
               <button
                 className="text-button"
                 type="button"
-                onClick={resendVerification}
+                onClick={() => void resendVerification()}
+                disabled={authSubmitting}
               >
                 Reenviar verificacao
+              </button>
+            ) : null}
+            {authMode === "forgot" ? (
+              <button
+                className="text-button"
+                type="button"
+                onClick={() => switchAuthMode("login")}
+                disabled={authSubmitting}
+              >
+                Voltar para entrar
               </button>
             ) : null}
           </div>
