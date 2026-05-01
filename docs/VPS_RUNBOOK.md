@@ -109,7 +109,7 @@ O container da API executa `prisma migrate deploy` e o seed auditado do catalogo
 Branches:
 
 - `dev`: publica `ghcr.io/mathwidu/figcontrol-api:dev-<sha>` e `ghcr.io/mathwidu/figcontrol-web:dev-<sha>`, depois atualiza `figcontrol-dev_api` e `figcontrol-dev_web`.
-- `prod`: publica tags `prod-<sha>`, depois atualiza `figcontrol-prod_api` e `figcontrol-prod_web`.
+- `prod`: publica tags `prod-<sha>`, depois atualiza `figcontrol_api` e `figcontrol_web`.
 
 Secrets do GitHub:
 
@@ -235,8 +235,8 @@ Esperado:
 Use a imagem anterior do service:
 
 ```bash
-docker service inspect figcontrol-prod_api --format '{{.PreviousSpec.TaskTemplate.ContainerSpec.Image}}'
-docker service inspect figcontrol-prod_web --format '{{.PreviousSpec.TaskTemplate.ContainerSpec.Image}}'
-docker service update --rollback figcontrol-prod_api
-docker service update --rollback figcontrol-prod_web
+docker service inspect figcontrol_api --format '{{.PreviousSpec.TaskTemplate.ContainerSpec.Image}}'
+docker service inspect figcontrol_web --format '{{.PreviousSpec.TaskTemplate.ContainerSpec.Image}}'
+docker service update --rollback figcontrol_api
+docker service update --rollback figcontrol_web
 ```

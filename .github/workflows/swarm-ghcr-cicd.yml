@@ -83,8 +83,8 @@ jobs:
             NEXT_PUBLIC_API_URL="https://figcontrol-api-dev.matheusduarte.dev.br"
           elif [ "${GITHUB_REF_NAME}" = "prod" ]; then
             CHANNEL="prod"
-            API_SERVICE="figcontrol-prod_api"
-            WEB_SERVICE="figcontrol-prod_web"
+            API_SERVICE="figcontrol_api"
+            WEB_SERVICE="figcontrol_web"
             NEXT_PUBLIC_API_URL="https://figcontrol-api.matheusduarte.dev.br"
           else
             echo "Branch nao suportada: ${GITHUB_REF_NAME}"
@@ -190,8 +190,8 @@ jobs:
             WEB_SERVICE="figcontrol-dev_web"
           elif [ "${GITHUB_REF_NAME}" = "prod" ]; then
             CHANNEL="prod"
-            API_SERVICE="figcontrol-prod_api"
-            WEB_SERVICE="figcontrol-prod_web"
+            API_SERVICE="figcontrol_api"
+            WEB_SERVICE="figcontrol_web"
           else
             echo "Branch nao suportada: ${GITHUB_REF_NAME}"
             exit 1
