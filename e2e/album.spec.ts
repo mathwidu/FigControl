@@ -128,14 +128,14 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
 
   await page.goto("/");
   await page.getByRole("tab", { name: "Criar conta" }).click();
-  await expect(
-    page.getByRole("tab", { name: "Entrar" }),
-  ).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Entrar" })).toBeVisible();
   await page.getByLabel("Email").fill("teste@example.com");
   await page.getByLabel("Senha", { exact: true }).fill("senhaforte");
   await expect(page.getByText("Uma letra maiuscula")).toBeVisible();
   await expect(page.getByText("Um simbolo especial")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Criar conta" })).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Criar conta" }),
+  ).toBeDisabled();
 
   await page.getByRole("button", { name: "Mostrar senha" }).first().click();
   await expect(page.getByLabel("Senha", { exact: true })).toHaveAttribute(
@@ -190,14 +190,29 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
 
   await page.getByRole("tab", { name: /Faltam 1/ }).click();
   await expect(
-    page.getByRole("button", { name: "Abrir ações de BRA20" }),
+    page.getByRole("button", { name: "Marcar BRA20 como faltando" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Marcar BRA3 como tenho" }),
   ).toBeVisible();
+  await expect(page.locator(".sticker-grid.compact .sticker-code")).toHaveText([
+    "BRA20",
+    "BRA3",
+  ]);
+
+  await page
+    .getByRole("button", { name: "Marcar BRA20 como faltando" })
+    .click();
   await expect(
-    page.locator(".sticker-grid.compact .sticker-code"),
-  ).toHaveText(["BRA20", "BRA3"]);
+    page.getByRole("heading", { name: "BRA20", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: /Faltam 2/ })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Marcar BRA20 como tenho" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Marcar BRA20 como tenho" }).click();
+  await expect(page.getByRole("tab", { name: /Faltam 1/ })).toBeVisible();
 
   await page.getByRole("tab", { name: /Tenho 1/ }).click();
   await page.getByRole("button", { name: "Abrir ações de BRA20" }).click();

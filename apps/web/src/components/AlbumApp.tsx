@@ -84,7 +84,7 @@ export function AlbumApp() {
     null,
   );
   const [detailTab, setDetailTab] = useState<DetailTab>("missing");
-  const [pendingOwnedStickerCodes, setPendingOwnedStickerCodes] = useState<
+  const [pendingStickerCodes, setPendingStickerCodes] = useState<
     ReadonlySet<string>
   >(() => new Set());
   const [error, setError] = useState<string | null>(null);
@@ -145,7 +145,7 @@ export function AlbumApp() {
       event.preventDefault();
       setActiveSectionSlug(null);
       setDetailTab("missing");
-      setPendingOwnedStickerCodes(new Set());
+      setPendingStickerCodes(new Set());
       window.requestAnimationFrame(() => {
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
@@ -313,15 +313,17 @@ export function AlbumApp() {
     }
   }
 
-  function markMissingAsOwned(sticker: WebSticker) {
-    setPendingOwnedStickerCodes((current) => {
+  function toggleMissingTabSticker(sticker: WebSticker) {
+    const nextQuantity = sticker.quantity > 0 ? 0 : 1;
+
+    setPendingStickerCodes((current) => {
       const next = new Set(current);
       next.add(sticker.code);
       return next;
     });
 
-    void changeQuantity(sticker, 1).finally(() => {
-      setPendingOwnedStickerCodes((current) => {
+    void changeQuantity(sticker, nextQuantity).finally(() => {
+      setPendingStickerCodes((current) => {
         const next = new Set(current);
         next.delete(sticker.code);
         return next;
@@ -376,12 +378,16 @@ export function AlbumApp() {
   if (!auth) {
     if (registrationEmail) {
       return (
-        <section className="auth-panel auth-success" aria-labelledby="auth-title">
+        <section
+          className="auth-panel auth-success"
+          aria-labelledby="auth-title"
+        >
           <p className="eyebrow">Conta criada</p>
           <h1 id="auth-title">Verifique seu email</h1>
           <p>
-            Enviamos um link de confirmacao para <strong>{registrationEmail}</strong>.
-            Depois de confirmar, voce ja pode entrar e sincronizar seu album.
+            Enviamos um link de confirmacao para{" "}
+            <strong>{registrationEmail}</strong>. Depois de confirmar, voce ja
+            pode entrar e sincronizar seu album.
           </p>
           {notice ? <div className="notice">{notice}</div> : null}
           {error ? <div className="notice error">{error}</div> : null}
@@ -433,7 +439,11 @@ export function AlbumApp() {
             : "Entre para sincronizar sua colecao."}
         </p>
         {authMode !== "forgot" ? (
-          <div className="auth-mode-tabs" role="tablist" aria-label="Modo de acesso">
+          <div
+            className="auth-mode-tabs"
+            role="tablist"
+            aria-label="Modo de acesso"
+          >
             <button
               className={authMode === "login" ? "active" : ""}
               type="button"
@@ -633,12 +643,12 @@ export function AlbumApp() {
               collectionName={collection.name}
               section={activeSection}
               activeTab={detailTab}
-              pendingOwnedStickerCodes={pendingOwnedStickerCodes}
+              pendingStickerCodes={pendingStickerCodes}
               onBack={() => setActiveSectionSlug(null)}
               onPrevious={() => openAdjacentSection(-1)}
               onNext={() => openAdjacentSection(1)}
               onTabChange={setDetailTab}
-              onMarkOwned={markMissingAsOwned}
+              onToggleMissingTabSticker={toggleMissingTabSticker}
               onChangeQuantity={changeQuantity}
               onCopyDuplicates={(text) =>
                 copyText(text, "Lista de repetidas copiada.")
@@ -802,12 +812,12 @@ function SectionDetail({
   collectionName,
   section,
   activeTab,
-  pendingOwnedStickerCodes,
+  pendingStickerCodes,
   onBack,
   onPrevious,
   onNext,
   onTabChange,
-  onMarkOwned,
+  onToggleMissingTabSticker,
   onChangeQuantity,
   onCopyDuplicates,
   onShareDuplicates,
@@ -815,12 +825,12 @@ function SectionDetail({
   collectionName: string;
   section: WebSection;
   activeTab: DetailTab;
-  pendingOwnedStickerCodes: ReadonlySet<string>;
+  pendingStickerCodes: ReadonlySet<string>;
   onBack: () => void;
   onPrevious: () => void;
   onNext: () => void;
   onTabChange: (tab: DetailTab) => void;
-  onMarkOwned: (sticker: WebSticker) => void;
+  onToggleMissingTabSticker: (sticker: WebSticker) => void;
   onChangeQuantity: (
     sticker: WebSticker,
     nextQuantity: number,
@@ -978,23 +988,18 @@ function SectionDetail({
               key={sticker.code}
               sticker={sticker}
               mode={activeTab}
-              transferring={pendingOwnedStickerCodes.has(sticker.code)}
+              transferring={pendingStickerCodes.has(sticker.code)}
               onClick={() => {
                 if (activeTab !== "missing") {
                   setSelectedStickerCode(sticker.code);
                   return;
                 }
 
-                if (pendingOwnedStickerCodes.has(sticker.code)) {
+                if (pendingStickerCodes.has(sticker.code)) {
                   return;
                 }
 
-                if (sticker.quantity === 0) {
-                  onMarkOwned(sticker);
-                  return;
-                }
-
-                setSelectedStickerCode(sticker.code);
+                onToggleMissingTabSticker(sticker);
               }}
             />
           ))}
@@ -1043,18 +1048,31 @@ function StickerTile({
   transferring: boolean;
   onClick: () => void;
 }) {
+  const isMissingTab = mode === "missing";
   const state =
-    transferring || sticker.quantity === 1
+    transferring ||
+    sticker.quantity === 1 ||
+    (isMissingTab && sticker.quantity > 0)
       ? "have"
       : sticker.quantity > 1
         ? "duplicate"
         : "missing";
   const actionLabel =
     mode === "missing" && transferring
-      ? `Salvando ${sticker.code} como tenho`
+      ? `Salvando ${sticker.code}`
       : mode === "missing" && sticker.quantity === 0
         ? `Marcar ${sticker.code} como tenho`
-      : `Abrir ações de ${sticker.code}`;
+        : mode === "missing"
+          ? `Marcar ${sticker.code} como faltando`
+          : `Abrir ações de ${sticker.code}`;
+  const metaLabel =
+    isMissingTab && sticker.quantity > 0
+      ? "Tenho"
+      : sticker.quantity > 1
+        ? `${sticker.quantity - 1} repetida${sticker.quantity - 1 > 1 ? "s" : ""}`
+        : sticker.quantity === 1 || transferring
+          ? "Tenho"
+          : "Falta";
 
   return (
     <article
@@ -1068,13 +1086,7 @@ function StickerTile({
       >
         <span className="sticker-code">{sticker.code}</span>
         <span className="sticker-number">{sticker.localNumber}</span>
-        <span className="sticker-card-meta">
-          {sticker.quantity > 1
-            ? `${sticker.quantity - 1} repetida${sticker.quantity - 1 > 1 ? "s" : ""}`
-            : sticker.quantity === 1 || transferring
-              ? "Tenho"
-              : "Falta"}
-        </span>
+        <span className="sticker-card-meta">{metaLabel}</span>
       </button>
     </article>
   );
