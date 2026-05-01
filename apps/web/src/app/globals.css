@@ -478,6 +478,7 @@ a {
 }
 
 .flag-card.has-flag {
+  aspect-ratio: 4 / 3;
   background: #f8fafc;
 }
 
