@@ -53,6 +53,46 @@ O remetente configurado nas stacks e `FigControl <noreply@notifications.matheusd
 Pode reutilizar o mesmo dominio/subdominio do VanRides se ele ja estiver verificado no Resend com SPF/DKIM corretos.
 Se quiser separar reputacao/identidade visual depois, crie outro subdominio no Resend e altere `FIGCONTROL_EMAIL_FROM`.
 
+Checklist do Resend antes de abrir producao:
+
+- Dominio/subdominio verificado no Resend.
+- DNS com SPF, DKIM e, se possivel, DMARC publicados.
+- `FIGCONTROL_EMAIL_FROM` usando um remetente do dominio verificado.
+- Secret `figcontrol_resend_api_key_v1` criado com chave ativa.
+- Cadastro novo recebendo email de verificacao.
+- Recuperacao de senha recebendo email com link valido.
+
+## Backup e restore
+
+Backup manual do banco de producao:
+
+```bash
+FIGCONTROL_BACKUP_DATABASE=figcontrol_db \
+FIGCONTROL_BACKUP_USER=postgres \
+FIGCONTROL_BACKUP_DIR=/opt/figcontrol/backups \
+  scripts/postgres-backup.sh
+```
+
+Backup manual do banco DEV:
+
+```bash
+FIGCONTROL_BACKUP_DATABASE=figcontrol_dev_db \
+FIGCONTROL_BACKUP_USER=postgres \
+FIGCONTROL_BACKUP_DIR=/opt/figcontrol/backups \
+  scripts/postgres-backup.sh
+```
+
+Restore exige confirmacao explicita para evitar acidente:
+
+```bash
+CONFIRM_RESTORE=figcontrol_db \
+FIGCONTROL_RESTORE_DATABASE=figcontrol_db \
+FIGCONTROL_RESTORE_USER=postgres \
+  scripts/postgres-restore.sh /opt/figcontrol/backups/figcontrol_db_YYYYMMDD_HHMMSS.dump
+```
+
+Antes de restaurar producao, faca um backup novo e valide o arquivo em DEV quando possivel.
+
 ## Primeira subida no Portainer
 
 Crie duas stacks versionadas:
@@ -81,6 +121,8 @@ Secrets do GitHub:
 - `GHCR_PUSH_TOKEN`
 - `GHCR_READ_USERNAME`
 - `GHCR_READ_TOKEN`
+- `FIGCONTROL_SMOKE_EMAIL` opcional, usuario verificado usado no smoke autenticado
+- `FIGCONTROL_SMOKE_PASSWORD` opcional, senha do usuario verificado usado no smoke autenticado
 
 Repository variables opcionais:
 
@@ -112,6 +154,32 @@ docker stack deploy -c deploy/swarm/figcontrol.dev.traefik.yml figcontrol-dev
 
 ## Smoke pos-deploy
 
+O workflow executa `scripts/smoke-figcontrol.sh` automaticamente depois do update dos services. Sem
+`FIGCONTROL_SMOKE_EMAIL` e `FIGCONTROL_SMOKE_PASSWORD`, ele valida health, manifest PWA e catalogo publico. Com
+essas credenciais, tambem valida login, colecao autenticada e update de figurinha.
+
+Manual DEV:
+
+```bash
+FIGCONTROL_SMOKE_WEB_URL=https://figcontrol-dev.matheusduarte.dev.br \
+FIGCONTROL_SMOKE_API_URL=https://figcontrol-api-dev.matheusduarte.dev.br \
+FIGCONTROL_SMOKE_EMAIL=teste+figcontrol@example.com \
+FIGCONTROL_SMOKE_PASSWORD='Senha-forte-123!' \
+  scripts/smoke-figcontrol.sh
+```
+
+Manual PROD:
+
+```bash
+FIGCONTROL_SMOKE_WEB_URL=https://figcontrol.matheusduarte.dev.br \
+FIGCONTROL_SMOKE_API_URL=https://figcontrol-api.matheusduarte.dev.br \
+FIGCONTROL_SMOKE_EMAIL=teste+figcontrol-prod@example.com \
+FIGCONTROL_SMOKE_PASSWORD='Senha-forte-123!' \
+  scripts/smoke-figcontrol.sh
+```
+
+Checagens rapidas com `curl`:
+
 ```bash
 curl -i https://figcontrol-api-dev.matheusduarte.dev.br/health
 curl -i https://figcontrol-api.matheusduarte.dev.br/health
@@ -124,7 +192,7 @@ Fluxo funcional:
 ```bash
 curl -sS -X POST https://figcontrol-api-dev.matheusduarte.dev.br/auth/register \
   -H 'Content-Type: application/json' \
-  -d '{"email":"teste+figcontrol@example.com","password":"senha-forte-123","confirmPassword":"senha-forte-123"}'
+  -d '{"email":"teste+figcontrol@example.com","password":"Senha-forte-123!","confirmPassword":"Senha-forte-123!"}'
 ```
 
 Confirme o email pelo link recebido. Depois faca login:
@@ -132,7 +200,7 @@ Confirme o email pelo link recebido. Depois faca login:
 ```bash
 curl -sS -X POST https://figcontrol-api-dev.matheusduarte.dev.br/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"teste+figcontrol@example.com","password":"senha-forte-123"}'
+  -d '{"email":"teste+figcontrol@example.com","password":"Senha-forte-123!"}'
 ```
 
 Com o `accessToken` do login, valide:

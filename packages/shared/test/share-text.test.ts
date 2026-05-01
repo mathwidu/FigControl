@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildWhatsAppShareText } from '../src/index';
+import { buildStickerListShareText, buildWhatsAppShareText } from '../src/index';
 
 describe('buildWhatsAppShareText', () => {
   it('groups missing and duplicate stickers by section', () => {
@@ -26,5 +26,51 @@ describe('buildWhatsAppShareText', () => {
     expect(text).toContain('Coca-Cola: CC1');
     expect(text).toContain('Repetidas');
     expect(text).toContain('Brasil: BRA3 x2');
+  });
+});
+
+describe('buildStickerListShareText', () => {
+  it('builds a focused missing sticker text grouped by section', () => {
+    const text = buildStickerListShareText({
+      collectionName: 'Copa 2026',
+      mode: 'missing',
+      sections: [
+        {
+          name: 'Brasil',
+          stickers: [
+            { code: 'BRA1', label: 'Escudo', quantity: 1 },
+            { code: 'BRA2', label: 'Alisson', quantity: 0 }
+          ]
+        },
+        {
+          name: 'Alemanha',
+          stickers: [{ code: 'GER1', label: 'Escudo', quantity: 0 }]
+        }
+      ]
+    });
+
+    expect(text).toBe('*Faltantes - Copa 2026*\n\nBrasil: BRA2\nAlemanha: GER1');
+  });
+
+  it('builds a focused duplicate sticker text grouped by section', () => {
+    const text = buildStickerListShareText({
+      collectionName: 'Copa 2026',
+      mode: 'duplicates',
+      sections: [
+        {
+          name: 'Brasil',
+          stickers: [
+            { code: 'BRA1', label: 'Escudo', quantity: 1 },
+            { code: 'BRA2', label: 'Alisson', quantity: 3 }
+          ]
+        },
+        {
+          name: 'Alemanha',
+          stickers: [{ code: 'GER1', label: 'Escudo', quantity: 2 }]
+        }
+      ]
+    });
+
+    expect(text).toBe('*Repetidas - Copa 2026*\n\nBrasil: BRA2 x2\nAlemanha: GER1 x1');
   });
 });

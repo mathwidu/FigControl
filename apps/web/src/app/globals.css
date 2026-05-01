@@ -289,6 +289,28 @@ a {
   color: var(--ink);
 }
 
+.unverified-panel,
+.first-use-panel {
+  border: 1px solid #c7e7d1;
+  border-radius: 14px;
+  background: #f2fff7;
+  color: #075c34;
+  padding: 12px;
+}
+
+.unverified-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-weight: 850;
+}
+
+.unverified-panel .text-button {
+  white-space: nowrap;
+}
+
 .icon-button,
 .text-button,
 .quantity-button,
@@ -525,6 +547,42 @@ a {
 .view-heading.contrast {
   color: #ffffff;
   align-items: center;
+}
+
+.home-action-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: -2px 0 14px;
+}
+
+.first-use-panel {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.first-use-panel svg {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--green);
+  color: #ffffff;
+  padding: 8px;
+}
+
+.first-use-panel strong {
+  display: block;
+  font-weight: 950;
+}
+
+.first-use-panel p {
+  margin: 2px 0 0;
+  color: #246449;
+  font-size: 0.88rem;
+  font-weight: 720;
 }
 
 .section-card-grid {

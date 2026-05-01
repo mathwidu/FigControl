@@ -181,6 +181,7 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
 
   await page.getByRole("button", { name: /Brasil/ }).click();
   await page.getByRole("button", { name: "Marcar BRA20 como tenho" }).click();
+  await expect(page.getByText("Salvo.")).toBeVisible();
 
   await page.getByRole("tab", { name: /Tenho 1/ }).click();
   await expect(

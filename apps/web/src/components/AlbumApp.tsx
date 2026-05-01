@@ -15,7 +15,10 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
-import { evaluatePasswordPolicy } from "@figcontrol/shared";
+import {
+  buildStickerListShareText,
+  evaluatePasswordPolicy,
+} from "@figcontrol/shared";
 import {
   type CSSProperties,
   FormEvent,
@@ -75,6 +78,7 @@ export function AlbumApp() {
   const [registrationEmail, setRegistrationEmail] = useState<string | null>(
     null,
   );
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [collection, setCollection] = useState<WebCollection | null>(null);
   const [activeSectionSlug, setActiveSectionSlug] = useState<string | null>(
     null,
@@ -199,14 +203,22 @@ export function AlbumApp() {
       const tokens = await login(email, password);
       saveAuth(tokens);
       setAuth(tokens);
+      setUnverifiedEmail(null);
       setPassword("");
       setConfirmPassword("");
     } catch (authError) {
-      setError(
+      const message =
         authError instanceof Error
           ? authError.message
-          : "Falha na autenticacao.",
-      );
+          : "Falha na autenticacao.";
+      if (
+        authMode === "login" &&
+        (message.includes("Email ainda nao verificado") ||
+          message.includes("Email not verified"))
+      ) {
+        setUnverifiedEmail(email.trim());
+      }
+      setError(message);
     } finally {
       setAuthSubmitting(false);
     }
@@ -233,6 +245,7 @@ export function AlbumApp() {
   function switchAuthMode(nextMode: AuthMode) {
     setAuthMode(nextMode);
     setRegistrationEmail(null);
+    setUnverifiedEmail(null);
     setError(null);
     setNotice(null);
     setPassword("");
@@ -273,7 +286,7 @@ export function AlbumApp() {
       return false;
     }
 
-    setNotice(null);
+    setNotice("Salvando...");
     setError(null);
 
     try {
@@ -284,8 +297,13 @@ export function AlbumApp() {
       );
       saveCollection(updated);
       setCollection(updated);
+      setNotice("Salvo.");
+      window.setTimeout(() => {
+        setNotice((current) => (current === "Salvo." ? null : current));
+      }, 1_600);
       return true;
     } catch (requestError) {
+      setNotice(null);
       setError(
         requestError instanceof Error
           ? requestError.message
@@ -341,6 +359,11 @@ export function AlbumApp() {
 
   function shareText(text: string) {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  }
+
+  function shareCollection(mode: "missing" | "duplicates") {
+    if (!collection) return;
+    shareText(buildCollectionShareText(collection, mode));
   }
 
   if (!auth) {
@@ -426,12 +449,28 @@ export function AlbumApp() {
         ) : null}
         {notice ? <div className="notice">{notice}</div> : null}
         {error ? <div className="notice error">{error}</div> : null}
+        {authMode === "login" && unverifiedEmail ? (
+          <div className="unverified-panel">
+            <span>Email pendente de verificacao.</span>
+            <button
+              className="text-button"
+              type="button"
+              onClick={() => void resendVerification(unverifiedEmail)}
+              disabled={authSubmitting}
+            >
+              {authSubmitting ? "Enviando..." : "Reenviar email"}
+            </button>
+          </div>
+        ) : null}
         <form className="form-grid" onSubmit={handleAuth}>
           <label className="field">
             <span>Email</span>
             <input
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setUnverifiedEmail(null);
+              }}
               type="email"
               required
             />
@@ -485,11 +524,11 @@ export function AlbumApp() {
                 Esqueci minha senha
               </button>
             ) : null}
-            {authMode === "login" ? (
+            {authMode === "login" && !unverifiedEmail ? (
               <button
                 className="text-button"
                 type="button"
-                onClick={() => void resendVerification()}
+                onClick={() => void resendVerification(email)}
                 disabled={authSubmitting}
               >
                 Reenviar verificacao
@@ -573,6 +612,8 @@ export function AlbumApp() {
             sections={collection.sections}
             activeSectionSlug={activeSectionSlug}
             onOpenSection={openSection}
+            onShareMissing={() => shareCollection("missing")}
+            onShareDuplicates={() => shareCollection("duplicates")}
           />
         </section>
 
@@ -631,12 +672,18 @@ function AlbumHome({
   sections,
   activeSectionSlug,
   onOpenSection,
+  onShareMissing,
+  onShareDuplicates,
 }: {
   collection: WebCollection;
   sections: WebSection[];
   activeSectionSlug: string | null;
   onOpenSection: (section: WebSection) => void;
+  onShareMissing: () => void;
+  onShareDuplicates: () => void;
 }) {
+  const hasStarted = collection.summary.tracked.have > 0;
+
   return (
     <div className="album-home">
       <div className="view-heading">
@@ -646,6 +693,33 @@ function AlbumHome({
         </div>
         <span>{sections.length} secoes</span>
       </div>
+      <div className="home-action-row" aria-label="Compartilhar colecao">
+        <button
+          className="text-button primary"
+          type="button"
+          onClick={onShareMissing}
+        >
+          <Share2 size={17} />
+          Compartilhar faltantes
+        </button>
+        <button
+          className="text-button"
+          type="button"
+          onClick={onShareDuplicates}
+        >
+          <Repeat2 size={17} />
+          Compartilhar repetidas
+        </button>
+      </div>
+      {!hasStarted ? (
+        <section className="first-use-panel" aria-label="Primeiro uso">
+          <Check size={20} />
+          <div>
+            <strong>Comece por uma selecao</strong>
+            <p>Abra um pais ou secao e toque nas figurinhas que voce ja tem.</p>
+          </div>
+        </section>
+      ) : null}
       <div className="section-card-grid">
         {sections.map((section) => (
           <SectionCard
@@ -1068,6 +1142,24 @@ function buildSectionDuplicateText(
     `*Repetidas - ${section.name}*`,
     ...(duplicateCodes.length > 0 ? duplicateCodes : ["Sem repetidas."]),
   ].join("\n");
+}
+
+function buildCollectionShareText(
+  collection: WebCollection,
+  mode: "missing" | "duplicates",
+): string {
+  return buildStickerListShareText({
+    collectionName: collection.name,
+    mode,
+    sections: collection.sections.map((section) => ({
+      name: section.name,
+      stickers: section.stickers.map((sticker) => ({
+        code: sticker.code,
+        label: sticker.label,
+        quantity: sticker.quantity,
+      })),
+    })),
+  });
 }
 
 function sectionToneStyle(section: WebSection): CSSProperties {

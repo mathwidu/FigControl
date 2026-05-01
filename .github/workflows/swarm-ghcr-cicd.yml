@@ -244,3 +244,36 @@ jobs:
             docker service update --image "${WEB_IMAGE}" --with-registry-auth --detach=false "${WEB_SERVICE}"
             docker service inspect "${API_SERVICE}" --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}'
             docker service inspect "${WEB_SERVICE}" --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}'
+
+  smoke_deploy:
+    runs-on: ubuntu-latest
+    needs: deploy_swarm
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve smoke URLs
+        id: smoke
+        run: |
+          set -euo pipefail
+
+          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+            echo "web_url=https://figcontrol-dev.matheusduarte.dev.br" >> "$GITHUB_OUTPUT"
+            echo "api_url=https://figcontrol-api-dev.matheusduarte.dev.br" >> "$GITHUB_OUTPUT"
+          elif [ "${GITHUB_REF_NAME}" = "prod" ]; then
+            echo "web_url=https://figcontrol.matheusduarte.dev.br" >> "$GITHUB_OUTPUT"
+            echo "api_url=https://figcontrol-api.matheusduarte.dev.br" >> "$GITHUB_OUTPUT"
+          else
+            echo "Branch nao suportada: ${GITHUB_REF_NAME}"
+            exit 1
+          fi
+
+      - name: Run smoke checks
+        env:
+          FIGCONTROL_SMOKE_WEB_URL: ${{ steps.smoke.outputs.web_url }}
+          FIGCONTROL_SMOKE_API_URL: ${{ steps.smoke.outputs.api_url }}
+          FIGCONTROL_SMOKE_EMAIL: ${{ secrets.FIGCONTROL_SMOKE_EMAIL }}
+          FIGCONTROL_SMOKE_PASSWORD: ${{ secrets.FIGCONTROL_SMOKE_PASSWORD }}
+        run: bash scripts/smoke-figcontrol.sh

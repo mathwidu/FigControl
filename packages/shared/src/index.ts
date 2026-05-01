@@ -35,6 +35,12 @@ export interface ShareInput {
   sections: ShareSection[];
 }
 
+export type StickerShareMode = 'missing' | 'duplicates';
+
+export interface StickerListShareInput extends ShareInput {
+  mode: StickerShareMode;
+}
+
 export interface CatalogStickerSeed {
   code: string;
   localNumber: number;
@@ -163,6 +169,25 @@ export function buildWhatsAppShareText(input: ShareInput): string {
   return lines.join('\n');
 }
 
+export function buildStickerListShareText(input: StickerListShareInput): string {
+  const sectionLines = input.sections
+    .map((section) => {
+      const codes = section.stickers
+        .map((sticker) => formatStickerForMode(sticker, input.mode))
+        .filter((code): code is string => code !== null);
+
+      return codes.length > 0 ? `${section.name}: ${codes.join(', ')}` : null;
+    })
+    .filter((line): line is string => line !== null);
+
+  const title = input.mode === 'missing' ? 'Faltantes' : 'Repetidas';
+  const emptyText = input.mode === 'missing' ? 'Nada faltando.' : 'Sem repetidas.';
+
+  return [`*${title} - ${input.collectionName}*`, '', ...(sectionLines.length > 0 ? sectionLines : [emptyText])].join(
+    '\n'
+  );
+}
+
 export function validateCatalogSeed(seed: CatalogSeed): CatalogValidationResult {
   const errors: string[] = [];
   const teamSections = seed.sections.filter((section) => section.kind === 'TEAM');
@@ -219,4 +244,12 @@ function summarizeBucket(items: ProgressInput[]): ProgressBucket {
   const percent = total === 0 ? 0 : Math.round((have / total) * 100);
 
   return { total, have, missing, duplicates, percent };
+}
+
+function formatStickerForMode(sticker: ShareSticker, mode: StickerShareMode): string | null {
+  if (mode === 'missing') {
+    return sticker.quantity === 0 ? sticker.code : null;
+  }
+
+  return sticker.quantity > 1 ? `${sticker.code} x${sticker.quantity - 1}` : null;
 }

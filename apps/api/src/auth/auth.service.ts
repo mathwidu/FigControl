@@ -59,7 +59,7 @@ export class AuthService {
     }
 
     if (!user.emailVerifiedAt) {
-      throw new ForbiddenException('Email not verified.');
+      throw new ForbiddenException('Email ainda nao verificado.');
     }
 
     return this.issueTokens({ id: user.id, email: user.email });
