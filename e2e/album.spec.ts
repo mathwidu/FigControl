@@ -145,8 +145,16 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
   await expect(
     page.getByRole("heading", { name: "Controle de Figurinhas 2026" }),
   ).toBeVisible();
+  await expect(
+    page.locator('img.flag-image[src="/flags/br.svg"]').first(),
+  ).toBeVisible();
   await page.getByRole("button", { name: /Brasil/ }).click();
   await expect(page.getByRole("tab", { name: /Faltam 2/ })).toBeVisible();
+  await page.getByRole("link", { name: "FigControl inicio" }).click();
+  await expect(page.getByRole("button", { name: /Brasil/ })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Faltam 2/ })).toHaveCount(0);
+
+  await page.getByRole("button", { name: /Brasil/ }).click();
   await page.getByRole("button", { name: "Marcar BRA20 como tenho" }).click();
 
   await page.getByRole("tab", { name: /Tenho 1/ }).click();

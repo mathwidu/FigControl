@@ -42,6 +42,7 @@ import {
   type WebSection,
   type WebSticker,
 } from "../lib/collection";
+import { getSectionFlag } from "../lib/flags";
 import {
   clearAuth,
   loadAuth,
@@ -122,6 +123,30 @@ export function AlbumApp() {
       setActiveSectionSlug(null);
     }
   }, [activeSectionSlug, collection]);
+
+  useEffect(() => {
+    const handleHomeLinkClick = (event: MouseEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Element)) return;
+      if (!target.closest("[data-home-link]")) return;
+      if (window.location.pathname !== "/") return;
+
+      event.preventDefault();
+      setActiveSectionSlug(null);
+      setDetailTab("missing");
+      setTransferringStickerCode(null);
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    };
+
+    document.addEventListener("click", handleHomeLinkClick);
+
+    return () => {
+      document.removeEventListener("click", handleHomeLinkClick);
+    };
+  }, []);
 
   const activeSectionIndex = useMemo(() => {
     if (!collection || !activeSectionSlug) return -1;
@@ -555,9 +580,7 @@ function SectionCard({
       type="button"
       onClick={onOpen}
     >
-      <div className="flag-card" aria-hidden="true">
-        <span>{getSectionDisplayCode(section)}</span>
-      </div>
+      <SectionFlagVisual section={section} />
       <div className="section-card-name">{section.name}</div>
       <div className="section-progress">
         <span>
@@ -570,6 +593,29 @@ function SectionCard({
         )}
       </div>
     </button>
+  );
+}
+
+function SectionFlagVisual({
+  section,
+  className = "",
+}: {
+  section: WebSection;
+  className?: string;
+}) {
+  const flag = getSectionFlag(section);
+
+  return (
+    <div
+      className={`flag-card ${className} ${flag ? "has-flag" : ""}`.trim()}
+      aria-hidden="true"
+    >
+      {flag ? (
+        <img className="flag-image" src={flag.src} alt="" loading="lazy" />
+      ) : (
+        <span>{getSectionDisplayCode(section)}</span>
+      )}
+    </div>
   );
 }
 
@@ -658,9 +704,7 @@ function SectionDetail({
         </div>
       </div>
 
-      <div className="detail-visual flag-card" aria-hidden="true">
-        <span>{getSectionDisplayCode(section)}</span>
-      </div>
+      <SectionFlagVisual section={section} className="detail-visual" />
 
       <div className="section-status">
         {isComplete ? (

@@ -27,7 +27,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="app-shell">
           <header className="topbar">
             <div className="topbar-inner">
-              <Link href="/" className="brand" aria-label="FigControl inicio">
+              <Link
+                href="/"
+                className="brand"
+                aria-label="FigControl inicio"
+                data-home-link
+              >
                 <div className="brand-mark">FC</div>
                 <div>
                   <div className="brand-title">FigControl Copa 2026</div>

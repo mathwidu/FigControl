@@ -477,6 +477,17 @@ a {
   font-weight: 950;
 }
 
+.flag-card.has-flag {
+  background: #ffffff;
+}
+
+.flag-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
 .section-card-name {
   min-width: 0;
   overflow-wrap: anywhere;
