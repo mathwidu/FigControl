@@ -53,6 +53,23 @@ O remetente configurado nas stacks e `FigControl <noreply@notifications.matheusd
 Pode reutilizar o mesmo dominio/subdominio do VanRides se ele ja estiver verificado no Resend com SPF/DKIM corretos.
 Se quiser separar reputacao/identidade visual depois, crie outro subdominio no Resend e altere `FIGCONTROL_EMAIL_FROM`.
 
+## Painel admin
+
+O painel interno fica em `/admin` e a API protege os dados pelo email autenticado. Configure o email da conta
+administradora na variavel `FIGCONTROL_ADMIN_EMAILS` da stack. Use uma lista separada por virgulas se precisar de mais
+de um acesso.
+
+Exemplo para deploy via SSH:
+
+```bash
+export FIGCONTROL_ADMIN_EMAILS='seu-email-admin@example.com'
+docker stack deploy -c deploy/swarm/figcontrol.dev.traefik.yml figcontrol-dev
+docker stack deploy -c deploy/swarm/figcontrol.traefik.yml figcontrol
+```
+
+No Portainer, adicione a env var `FIGCONTROL_ADMIN_EMAILS` nas variaveis da stack antes de atualizar. Se essa variavel
+ficar vazia, nenhum usuario tera acesso ao painel admin.
+
 Checklist do Resend antes de abrir producao:
 
 - Dominio/subdominio verificado no Resend.
@@ -222,6 +239,9 @@ curl -sS -X PATCH https://figcontrol-api-dev.matheusduarte.dev.br/me/collection/
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H 'Content-Type: application/json' \
   -d '{"quantity":2}'
+
+curl -sS https://figcontrol-api-dev.matheusduarte.dev.br/admin/dashboard \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
 
 Esperado:

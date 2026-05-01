@@ -14,6 +14,7 @@ const envSchema = z.object({
   FIGCONTROL_EMAIL_VERIFICATION_RESEND_COOLDOWN_MINUTES: z.coerce.number().int().positive().default(15),
   FIGCONTROL_PASSWORD_RESET_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(60),
   FIGCONTROL_PASSWORD_RESET_RESEND_COOLDOWN_MINUTES: z.coerce.number().int().positive().default(5),
+  FIGCONTROL_ADMIN_EMAILS: z.string().default(''),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   PORT: z.coerce.number().int().positive().default(3001)
 });

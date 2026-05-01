@@ -1,12 +1,13 @@
-import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
-import { CatalogModule } from '../catalog/catalog.module';
-import { CollectionsController } from './collections.controller';
-import { CollectionsService } from './collections.service';
+import { Module } from "@nestjs/common";
+import { AnalyticsModule } from "../analytics/analytics.module";
+import { AuthModule } from "../auth/auth.module";
+import { CatalogModule } from "../catalog/catalog.module";
+import { CollectionsController } from "./collections.controller";
+import { CollectionsService } from "./collections.service";
 
 @Module({
-  imports: [AuthModule, CatalogModule],
+  imports: [AnalyticsModule, AuthModule, CatalogModule],
   controllers: [CollectionsController],
-  providers: [CollectionsService]
+  providers: [CollectionsService],
 })
 export class CollectionsModule {}

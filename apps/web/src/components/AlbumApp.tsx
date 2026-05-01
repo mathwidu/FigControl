@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  BarChart3,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -24,8 +25,10 @@ import {
   FormEvent,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import type { AnalyticsEventType } from "@figcontrol/shared";
 import { createPortal } from "react-dom";
 import {
   getCollection,
@@ -35,6 +38,7 @@ import {
   requestEmailVerification,
   requestPasswordReset,
   setStickerQuantity,
+  trackAnalyticsEvent,
   type AuthTokens,
 } from "../lib/api";
 import {
@@ -93,6 +97,7 @@ export function AlbumApp() {
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [installEvent, setInstallEvent] = useState<Event | null>(null);
+  const trackedAppOpenUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     setAuth(loadAuth());
@@ -124,6 +129,15 @@ export function AlbumApp() {
   useEffect(() => {
     if (!auth || !isOnline) return;
     void loadRemoteCollection(auth);
+  }, [auth, isOnline]);
+
+  useEffect(() => {
+    if (!auth || !isOnline || trackedAppOpenUserRef.current === auth.user.id) {
+      return;
+    }
+
+    trackedAppOpenUserRef.current = auth.user.id;
+    trackAppEvent(auth, "app_opened");
   }, [auth, isOnline]);
 
   useEffect(() => {
@@ -352,6 +366,10 @@ export function AlbumApp() {
     setDetailTab(
       summarizeSectionProgress(section).missing === 0 ? "owned" : "missing",
     );
+    trackAppEvent(auth, "section_opened", {
+      sectionSlug: section.slug,
+      sectionName: section.name,
+    });
   }
 
   function openAdjacentSection(direction: -1 | 1) {
@@ -373,6 +391,10 @@ export function AlbumApp() {
 
   function shareCollection(mode: "missing" | "duplicates") {
     if (!collection) return;
+    trackAppEvent(
+      auth,
+      mode === "missing" ? "share_missing_clicked" : "share_duplicates_clicked",
+    );
     shareText(buildCollectionShareText(collection, mode));
   }
 
@@ -582,6 +604,11 @@ export function AlbumApp() {
           <h1>Controle de Figurinhas 2026</h1>
         </div>
         <div className="hero-actions">
+          {auth.user.isAdmin ? (
+            <a className="icon-button translucent" href="/admin" title="Painel">
+              <BarChart3 size={18} />
+            </a>
+          ) : null}
           {installEvent ? (
             <button
               className="icon-button translucent"
@@ -661,6 +688,17 @@ export function AlbumApp() {
       </div>
     </div>
   );
+}
+
+function trackAppEvent(
+  auth: AuthTokens | null,
+  eventType: AnalyticsEventType,
+  metadata?: Record<string, unknown>,
+) {
+  if (!auth || !navigator.onLine) return;
+  void trackAnalyticsEvent(auth.accessToken, eventType, metadata).catch(() => {
+    // Metric failures should never interrupt the album flow.
+  });
 }
 
 function StatusMessages({

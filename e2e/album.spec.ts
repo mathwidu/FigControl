@@ -57,6 +57,56 @@ const apiHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
 };
 
+const adminDashboard = {
+  generatedAt: "2026-05-01T12:00:00.000Z",
+  overview: {
+    totalUsers: 12,
+    verifiedUsers: 9,
+    usersWithStickers: 7,
+    activeToday: 4,
+    active7Days: 8,
+    active30Days: 10,
+    totalMarkedStickers: 320,
+    totalStickerQuantity: 365,
+    duplicateStickers: 18,
+    shareClicks: 11,
+  },
+  funnel: {
+    registered: 12,
+    verified: 9,
+    markedFirstSticker: 7,
+  },
+  daily: Array.from({ length: 30 }, (_, index) => ({
+    date: `2026-04-${String(index + 1).padStart(2, "0")}`,
+    signups: index % 4,
+    verified: index % 3,
+    activeUsers: (index % 6) + 1,
+    stickerUpdates: index % 7,
+    events: index % 9,
+  })),
+  topOpenedSections: [
+    { slug: "brasil", name: "Brasil", value: 14 },
+    { slug: "argentina", name: "Argentina", value: 8 },
+  ],
+  topMarkedSections: [
+    { slug: "brasil", name: "Brasil", value: 20 },
+    { slug: "coca-cola", name: "Coca-Cola", value: 6 },
+  ],
+  users: [
+    {
+      id: "user-1",
+      email: "admin@example.com",
+      emailVerified: true,
+      createdAt: "2026-05-01T10:00:00.000Z",
+      lastSeenAt: "2026-05-01T11:30:00.000Z",
+      lastStickerUpdateAt: "2026-05-01T11:00:00.000Z",
+      markedStickers: 20,
+      duplicateStickers: 2,
+      totalQuantity: 22,
+    },
+  ],
+};
+
 test("registers, marks a missing sticker as owned, manages duplicates and copies section duplicates", async ({
   context,
   page,
@@ -110,6 +160,10 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
         refreshToken: "refresh-token-refreshed",
       },
     });
+  });
+
+  await page.route("**/analytics/events", async (route) => {
+    await route.fulfill({ headers: apiHeaders, json: { success: true } });
   });
 
   await page.route(/\/me\/collection\/world-cup-2026$/, async (route) => {
@@ -277,6 +331,10 @@ test("keeps the desktop sticker detail pane scrollable independently", async ({
     await route.fulfill({ headers: apiHeaders, json: collection });
   });
 
+  await page.route("**/analytics/events", async (route) => {
+    await route.fulfill({ headers: apiHeaders, json: { success: true } });
+  });
+
   await page.goto("/");
   await page.getByRole("button", { name: /Brasil/ }).click();
 
@@ -299,6 +357,38 @@ test("keeps the desktop sticker detail pane scrollable independently", async ({
   await expect
     .poll(() => page.evaluate(() => window.scrollY))
     .toBe(initialPageScroll);
+});
+
+test("renders the internal admin dashboard for an authorized account", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "figcontrol.auth.v1",
+      JSON.stringify({
+        user: { id: "admin-1", email: "admin@example.com", isAdmin: true },
+        accessToken: "admin-access-token",
+        refreshToken: "admin-refresh-token",
+      }),
+    );
+  });
+
+  await page.route("**/admin/dashboard", async (route) => {
+    await route.fulfill({ headers: apiHeaders, json: adminDashboard });
+  });
+
+  await page.goto("/admin");
+
+  await expect(
+    page.getByRole("heading", { name: "Como o FigControl está indo" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "admin@example.com" }),
+  ).toBeVisible();
+  await expect(page.getByText("Usuários", { exact: true })).toBeVisible();
+  await expect(page.getByText("Seções mais abertas")).toBeVisible();
+  await expect(page.getByText("Brasil").first()).toBeVisible();
+  await expect(page.getByText("Verificado", { exact: true })).toBeVisible();
 });
 
 function buildOverflowCollection() {

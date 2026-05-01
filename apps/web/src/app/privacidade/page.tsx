@@ -11,6 +11,12 @@ export default function PrivacyPage() {
         segurança, diagnóstico, prevenção de abuso e melhoria do serviço.
       </p>
       <p>
+        Também registramos métricas internas de uso, como abertura de seções,
+        marcação de figurinhas e cliques de compartilhamento. Esses dados servem
+        para acompanhar a saúde do app, entender quais fluxos precisam melhorar
+        e proteger o serviço contra abuso.
+      </p>
+      <p>
         E-mails transacionais, como verificação de conta e redefinição de senha,
         podem ser enviados por um provedor externo, como o Resend.
       </p>
@@ -20,13 +26,17 @@ export default function PrivacyPage() {
       </p>
       <ul>
         <li>
-          GitHub:{' '}
-          <a href="https://github.com/mathwidu" rel="noreferrer" target="_blank">
+          GitHub:{" "}
+          <a
+            href="https://github.com/mathwidu"
+            rel="noreferrer"
+            target="_blank"
+          >
             github.com/mathwidu
           </a>
         </li>
         <li>
-          LinkedIn:{' '}
+          LinkedIn:{" "}
           <a
             href="https://www.linkedin.com/in/matheus-wduarte/"
             rel="noreferrer"
