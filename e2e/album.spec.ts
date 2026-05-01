@@ -148,6 +148,9 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
   await expect(
     page.locator('img.flag-image[src="/flags/br.svg"]').first(),
   ).toBeVisible();
+  await expect(
+    page.locator('img.flag-image[src="/flags/br.svg"]').first(),
+  ).toHaveCSS("object-fit", "contain");
   await page.getByRole("button", { name: /Brasil/ }).click();
   await expect(page.getByRole("tab", { name: /Faltam 2/ })).toBeVisible();
   await page.getByRole("link", { name: "FigControl inicio" }).click();
