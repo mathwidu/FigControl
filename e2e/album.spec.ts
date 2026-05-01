@@ -180,8 +180,15 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
   await expect(page.getByRole("tab", { name: /Faltam 2/ })).toHaveCount(0);
 
   await page.getByRole("button", { name: /Brasil/ }).click();
+  const heroLayoutTopBeforeSave = await page
+    .locator(".album-hero")
+    .evaluate((element) => (element as HTMLElement).offsetTop);
   await page.getByRole("button", { name: "Marcar BRA20 como tenho" }).click();
   await expect(page.getByText("Salvo.")).toBeVisible();
+  const heroLayoutTopAfterSave = await page
+    .locator(".album-hero")
+    .evaluate((element) => (element as HTMLElement).offsetTop);
+  expect(heroLayoutTopAfterSave).toBe(heroLayoutTopBeforeSave);
 
   await page.getByRole("tab", { name: /Tenho 1/ }).click();
   await expect(
@@ -216,6 +223,21 @@ test("registers, marks a missing sticker as owned, manages duplicates and copies
 
   await page.getByRole("tab", { name: /Tenho 1/ }).click();
   await page.getByRole("button", { name: "Abrir ações de BRA20" }).click();
+  const actionBackdropParent = await page
+    .locator(".sticker-actions-backdrop")
+    .evaluate((element) => element.parentElement?.tagName);
+  const actionPanelBox = await page
+    .locator(".sticker-actions-panel")
+    .boundingBox();
+  const viewport = page.viewportSize();
+
+  expect(actionBackdropParent).toBe("BODY");
+  expect(actionPanelBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(actionPanelBox!.x).toBeGreaterThanOrEqual(0);
+  expect(actionPanelBox!.x + actionPanelBox!.width).toBeLessThanOrEqual(
+    viewport!.width,
+  );
   await page.getByRole("button", { name: "Adicionar repetida" }).click();
   await expect(
     page.getByRole("button", { name: "Abrir ações de BRA20" }),

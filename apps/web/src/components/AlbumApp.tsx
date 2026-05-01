@@ -26,6 +26,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   getCollection,
   login,
@@ -671,16 +672,24 @@ function StatusMessages({
   notice: string | null;
   error: string | null;
 }) {
+  const hasMessage = !isOnline || notice || error;
+
+  if (!hasMessage) return null;
+
   return (
-    <>
+    <div className="status-toast-region" role="status" aria-live="polite">
       {!isOnline ? (
-        <div className="notice">
+        <div className="notice app-toast">
           <WifiOff size={18} /> Offline: leitura cacheada.
         </div>
       ) : null}
-      {notice ? <div className="notice">{notice}</div> : null}
-      {error ? <div className="notice error">{error}</div> : null}
-    </>
+      {notice ? <div className="notice app-toast">{notice}</div> : null}
+      {error ? (
+        <div className="notice error app-toast" role="alert">
+          {error}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -1105,7 +1114,9 @@ function StickerActions({
   onRemoveDuplicate: () => Promise<void>;
   onMarkMissing: () => Promise<void>;
 }) {
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div className="sticker-actions-backdrop" role="presentation">
       <section
         className="sticker-actions-panel"
@@ -1148,7 +1159,8 @@ function StickerActions({
           </button>
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
