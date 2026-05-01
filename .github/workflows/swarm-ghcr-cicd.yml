@@ -142,12 +142,6 @@ jobs:
             ${{ steps.resolve.outputs.web_image }}
             ${{ steps.resolve.outputs.web_latest }}
 
-    outputs:
-      api_image: ${{ steps.resolve.outputs.api_image }}
-      web_image: ${{ steps.resolve.outputs.web_image }}
-      api_service: ${{ steps.resolve.outputs.api_service }}
-      web_service: ${{ steps.resolve.outputs.web_service }}
-
   deploy_swarm:
     runs-on: ubuntu-latest
     needs: build_and_push
@@ -175,15 +169,48 @@ jobs:
             exit 1;
           }
 
+      - name: Resolve deploy variables
+        id: resolve
+        env:
+          GHCR_IMAGE_REPO_API: ${{ vars.GHCR_IMAGE_REPO_API }}
+          GHCR_IMAGE_REPO_WEB: ${{ vars.GHCR_IMAGE_REPO_WEB }}
+        run: |
+          set -euo pipefail
+
+          SHORT_SHA="${GITHUB_SHA::7}"
+          DEFAULT_REPO="$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+          API_REPO="${GHCR_IMAGE_REPO_API:-${DEFAULT_REPO}-api}"
+          WEB_REPO="${GHCR_IMAGE_REPO_WEB:-${DEFAULT_REPO}-web}"
+          API_REPO="${API_REPO#ghcr.io/}"
+          WEB_REPO="${WEB_REPO#ghcr.io/}"
+
+          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+            CHANNEL="dev"
+            API_SERVICE="figcontrol-dev_api"
+            WEB_SERVICE="figcontrol-dev_web"
+          elif [ "${GITHUB_REF_NAME}" = "prod" ]; then
+            CHANNEL="prod"
+            API_SERVICE="figcontrol-prod_api"
+            WEB_SERVICE="figcontrol-prod_web"
+          else
+            echo "Branch nao suportada: ${GITHUB_REF_NAME}"
+            exit 1
+          fi
+
+          echo "api_image=${REGISTRY}/${API_REPO}:${CHANNEL}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "web_image=${REGISTRY}/${WEB_REPO}:${CHANNEL}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "api_service=${API_SERVICE}" >> "$GITHUB_OUTPUT"
+          echo "web_service=${WEB_SERVICE}" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to Docker Swarm on VPS
         uses: appleboy/ssh-action@v1.0.3
         env:
           GHCR_USER: ${{ secrets.GHCR_READ_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
-          API_IMAGE: ${{ needs.build_and_push.outputs.api_image }}
-          WEB_IMAGE: ${{ needs.build_and_push.outputs.web_image }}
-          API_SERVICE: ${{ needs.build_and_push.outputs.api_service }}
-          WEB_SERVICE: ${{ needs.build_and_push.outputs.web_service }}
+          API_IMAGE: ${{ steps.resolve.outputs.api_image }}
+          WEB_IMAGE: ${{ steps.resolve.outputs.web_image }}
+          API_SERVICE: ${{ steps.resolve.outputs.api_service }}
+          WEB_SERVICE: ${{ steps.resolve.outputs.web_service }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
