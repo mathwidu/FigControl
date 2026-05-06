@@ -7,6 +7,7 @@ import { CatalogModule } from "./catalog/catalog.module";
 import { CollectionsModule } from "./collections/collections.module";
 import { validateEnv } from "./config/env";
 import { HealthController } from "./health.controller";
+import { LeaderboardModule } from "./leaderboard/leaderboard.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ProfilesModule } from "./profiles/profiles.module";
 
@@ -23,6 +24,7 @@ import { ProfilesModule } from "./profiles/profiles.module";
     CatalogModule,
     CollectionsModule,
     ProfilesModule,
+    LeaderboardModule,
   ],
   controllers: [HealthController],
 })
