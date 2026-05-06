@@ -8,6 +8,7 @@ import { CollectionsModule } from "./collections/collections.module";
 import { validateEnv } from "./config/env";
 import { HealthController } from "./health.controller";
 import { PrismaModule } from "./prisma/prisma.module";
+import { ProfilesModule } from "./profiles/profiles.module";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { PrismaModule } from "./prisma/prisma.module";
     AdminModule,
     CatalogModule,
     CollectionsModule,
+    ProfilesModule,
   ],
   controllers: [HealthController],
 })
