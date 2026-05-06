@@ -76,6 +76,8 @@ export interface AdminFunnelMetric {
   registered: number;
   verified: number;
   markedFirstSticker: number;
+  profileCompleted: number;
+  leaderboardJoined: number;
 }
 
 export interface AdminTopSectionMetric {
@@ -166,6 +168,9 @@ export interface AdminDashboard {
     totalStickerQuantity: number;
     duplicateStickers: number;
     shareClicks: number;
+    profileCompletedUsers: number;
+    leaderboardParticipants: number;
+    exchangeOptIns: number;
   };
   funnel: AdminFunnelMetric;
   daily: AdminDailyMetric[];

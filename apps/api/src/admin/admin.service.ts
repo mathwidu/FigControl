@@ -18,9 +18,14 @@ interface OverviewRow {
   total_sticker_quantity: bigint;
   duplicate_stickers: bigint;
   share_clicks: bigint;
+  profile_completed_users: bigint;
+  leaderboard_participants: bigint;
+  exchange_opt_ins: bigint;
   registered: bigint;
   verified: bigint;
   marked_first_sticker: bigint;
+  profile_completed: bigint;
+  leaderboard_joined: bigint;
 }
 
 interface DailyRow {
@@ -78,11 +83,16 @@ export class AdminService {
         totalStickerQuantity: toNumber(overview.total_sticker_quantity),
         duplicateStickers: toNumber(overview.duplicate_stickers),
         shareClicks: toNumber(overview.share_clicks),
+        profileCompletedUsers: toNumber(overview.profile_completed_users),
+        leaderboardParticipants: toNumber(overview.leaderboard_participants),
+        exchangeOptIns: toNumber(overview.exchange_opt_ins),
       },
       funnel: {
         registered: toNumber(overview.registered),
         verified: toNumber(overview.verified),
         markedFirstSticker: toNumber(overview.marked_first_sticker),
+        profileCompleted: toNumber(overview.profile_completed),
+        leaderboardJoined: toNumber(overview.leaderboard_joined),
       },
       daily: dailyRows.map(toDailyMetric),
       topOpenedSections: openedRows.map(toTopSectionMetric),
@@ -122,11 +132,15 @@ export class AdminService {
           GREATEST(q.last_sticker_update, t.last_token_created, e.last_event_created) AS last_seen_at,
           COALESCE(q.marked_stickers, 0) AS marked_stickers,
           COALESCE(q.total_quantity, 0) AS total_quantity,
-          COALESCE(q.duplicate_stickers, 0) AS duplicate_stickers
+          COALESCE(q.duplicate_stickers, 0) AS duplicate_stickers,
+          p.profile_completed_at,
+          p.leaderboard_joined_at,
+          COALESCE(p.exchange_opt_in, false) AS exchange_opt_in
         FROM users u
         LEFT JOIN quantity_by_user q ON q.user_id = u.id
         LEFT JOIN token_by_user t ON t.user_id = u.id
         LEFT JOIN event_by_user e ON e.user_id = u.id
+        LEFT JOIN user_profiles p ON p.user_id = u.id
       ), share_events AS (
         SELECT COUNT(*) AS share_clicks
         FROM analytics_events
@@ -143,9 +157,14 @@ export class AdminService {
         COALESCE(SUM(total_quantity), 0) AS total_sticker_quantity,
         COALESCE(SUM(duplicate_stickers), 0) AS duplicate_stickers,
         (SELECT share_clicks FROM share_events) AS share_clicks,
+        COUNT(*) FILTER (WHERE profile_completed_at IS NOT NULL) AS profile_completed_users,
+        COUNT(*) FILTER (WHERE leaderboard_joined_at IS NOT NULL) AS leaderboard_participants,
+        COUNT(*) FILTER (WHERE exchange_opt_in = true) AS exchange_opt_ins,
         COUNT(*) AS registered,
         COUNT(*) FILTER (WHERE email_verified_at IS NOT NULL) AS verified,
-        COUNT(*) FILTER (WHERE marked_stickers > 0) AS marked_first_sticker
+        COUNT(*) FILTER (WHERE marked_stickers > 0) AS marked_first_sticker,
+        COUNT(*) FILTER (WHERE profile_completed_at IS NOT NULL) AS profile_completed,
+        COUNT(*) FILTER (WHERE leaderboard_joined_at IS NOT NULL) AS leaderboard_joined
       FROM per_user
     `;
   }
@@ -322,8 +341,13 @@ function emptyOverviewRow(): OverviewRow {
     total_sticker_quantity: 0n,
     duplicate_stickers: 0n,
     share_clicks: 0n,
+    profile_completed_users: 0n,
+    leaderboard_participants: 0n,
+    exchange_opt_ins: 0n,
     registered: 0n,
     verified: 0n,
     marked_first_sticker: 0n,
+    profile_completed: 0n,
+    leaderboard_joined: 0n,
   };
 }

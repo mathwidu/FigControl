@@ -6,10 +6,12 @@ import {
   CalendarDays,
   CheckCircle2,
   Lock,
+  MapPin,
   RefreshCcw,
   Share2,
   ShieldCheck,
   TrendingUp,
+  Trophy,
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -186,6 +188,18 @@ function AdminMetricGrid({ dashboard }: { dashboard: AdminDashboard }) {
       icon: Share2,
     },
     {
+      label: "Perfis",
+      value: dashboard.overview.profileCompletedUsers,
+      hint: `${dashboard.overview.exchangeOptIns} querem trocar`,
+      icon: MapPin,
+    },
+    {
+      label: "Ranking",
+      value: dashboard.overview.leaderboardParticipants,
+      hint: "Participantes inscritos",
+      icon: Trophy,
+    },
+    {
       label: "Ativos 30 dias",
       value: dashboard.overview.active30Days,
       hint: "Retenção recente",
@@ -228,6 +242,20 @@ function AdminFunnel({ dashboard }: { dashboard: AdminDashboard }) {
       value: dashboard.funnel.markedFirstSticker,
       percent: Math.round(
         (dashboard.funnel.markedFirstSticker / registered) * 100,
+      ),
+    },
+    {
+      label: "Perfil completo",
+      value: dashboard.funnel.profileCompleted,
+      percent: Math.round(
+        (dashboard.funnel.profileCompleted / registered) * 100,
+      ),
+    },
+    {
+      label: "Entrou no ranking",
+      value: dashboard.funnel.leaderboardJoined,
+      percent: Math.round(
+        (dashboard.funnel.leaderboardJoined / registered) * 100,
       ),
     },
   ];
