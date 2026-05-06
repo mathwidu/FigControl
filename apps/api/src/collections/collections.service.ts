@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { AnalyticsService } from "../analytics/analytics.service";
 import { CatalogService } from "../catalog/catalog.service";
+import { CollectionStatsService } from "../leaderboard/collection-stats.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { buildCollectionView, CollectionView } from "./collection.presenter";
 
@@ -15,6 +16,7 @@ export class CollectionsService {
     private readonly prisma: PrismaService,
     private readonly catalogService: CatalogService,
     private readonly analyticsService: AnalyticsService,
+    private readonly collectionStatsService: CollectionStatsService,
   ) {}
 
   async getUserCollection(
@@ -56,6 +58,7 @@ export class CollectionsService {
     quantity: number,
   ) {
     await this.applyQuantity(userId, slug, stickerId, quantity);
+    await this.collectionStatsService.recalculateUserStats(userId, slug);
     return this.getUserCollection(userId, slug);
   }
 
@@ -67,6 +70,7 @@ export class CollectionsService {
     for (const update of updates) {
       await this.applyQuantity(userId, slug, update.stickerId, update.quantity);
     }
+    await this.collectionStatsService.recalculateUserStats(userId, slug);
     return this.getUserCollection(userId, slug);
   }
 
