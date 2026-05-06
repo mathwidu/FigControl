@@ -221,30 +221,14 @@ export function summarizeProgress(items: ProgressInput[]): ProgressSummary {
 }
 
 export function buildWhatsAppShareText(input: ShareInput): string {
-  const missingLines = input.sections
-    .map((section) => {
-      const codes = section.stickers
-        .filter((sticker) => sticker.quantity === 0)
-        .map((sticker) => sticker.code);
-      return codes.length > 0 ? `${section.name}: ${codes.join(", ")}` : null;
-    })
-    .filter((line): line is string => line !== null);
+  const missingLines = buildCompactStickerLines(input.sections, "missing");
+  const duplicateLines = buildCompactStickerLines(input.sections, "duplicates");
 
-  const duplicateLines = input.sections
-    .map((section) => {
-      const codes = section.stickers
-        .filter((sticker) => sticker.quantity > 1)
-        .map((sticker) => `${sticker.code} x${sticker.quantity - 1}`);
-      return codes.length > 0 ? `${section.name}: ${codes.join(", ")}` : null;
-    })
-    .filter((line): line is string => line !== null);
-
-  const lines = [`*${input.collectionName}*`, ""];
-
-  lines.push("*Faltam*");
+  const lines = ["Faltam", ""];
   lines.push(...(missingLines.length > 0 ? missingLines : ["Nada faltando."]));
   lines.push("");
-  lines.push("*Repetidas*");
+  lines.push("Repetidas");
+  lines.push("");
   lines.push(
     ...(duplicateLines.length > 0 ? duplicateLines : ["Sem repetidas."]),
   );
@@ -255,22 +239,14 @@ export function buildWhatsAppShareText(input: ShareInput): string {
 export function buildStickerListShareText(
   input: StickerListShareInput,
 ): string {
-  const sectionLines = input.sections
-    .map((section) => {
-      const codes = section.stickers
-        .map((sticker) => formatStickerForMode(sticker, input.mode))
-        .filter((code): code is string => code !== null);
-
-      return codes.length > 0 ? `${section.name}: ${codes.join(", ")}` : null;
-    })
-    .filter((line): line is string => line !== null);
+  const sectionLines = buildCompactStickerLines(input.sections, input.mode);
 
   const title = input.mode === "missing" ? "Faltantes" : "Repetidas";
   const emptyText =
     input.mode === "missing" ? "Nada faltando." : "Sem repetidas.";
 
   return [
-    `*${title} - ${input.collectionName}*`,
+    title,
     "",
     ...(sectionLines.length > 0 ? sectionLines : [emptyText]),
   ].join("\n");
@@ -347,10 +323,58 @@ function formatStickerForMode(
   mode: StickerShareMode,
 ): string | null {
   if (mode === "missing") {
-    return sticker.quantity === 0 ? sticker.code : null;
+    return sticker.quantity === 0 ? formatStickerNumber(sticker.code) : null;
   }
 
   return sticker.quantity > 1
-    ? `${sticker.code} x${sticker.quantity - 1}`
+    ? formatStickerNumber(sticker.code, sticker.quantity - 1)
     : null;
+}
+
+function buildCompactStickerLines(
+  sections: ShareSection[],
+  mode: StickerShareMode,
+): string[] {
+  return sections
+    .map((section) => {
+      const grouped = new Map<string, string[]>();
+
+      for (const sticker of section.stickers) {
+        const formatted = formatStickerForMode(sticker, mode);
+        if (!formatted) continue;
+
+        const prefix = getStickerCodeParts(sticker.code).prefix;
+        grouped.set(prefix, [...(grouped.get(prefix) ?? []), formatted]);
+      }
+
+      return [...grouped.entries()].map(
+        ([prefix, numbers]) => `${prefix}- ${numbers.join("-")}`,
+      );
+    })
+    .flat();
+}
+
+function formatStickerNumber(code: string, duplicateCount?: number): string {
+  const { number } = getStickerCodeParts(code);
+  return duplicateCount && duplicateCount > 1
+    ? `${number} (${duplicateCount})`
+    : number;
+}
+
+function getStickerCodeParts(code: string): { prefix: string; number: string } {
+  const match = code.match(/^([A-Za-z]+)(\d+)$/);
+
+  if (!match) {
+    return { prefix: code, number: code };
+  }
+
+  const [, prefix, rawNumber] = match;
+  const normalizedNumber = /^0+$/.test(rawNumber)
+    ? rawNumber
+    : rawNumber.replace(/^0+/, "");
+
+  return {
+    prefix: prefix.toUpperCase(),
+    number: normalizedNumber || "0",
+  };
 }

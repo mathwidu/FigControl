@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   filterSectionStickersByOwnership,
   filterCollectionSections,
+  formatStickerDisplayNumber,
   getOfflineMutationMessage,
   getSectionDisplayCode,
   summarizeSectionProgress,
@@ -110,6 +111,25 @@ describe("getSectionDisplayCode", () => {
         stickers: [],
       }),
     ).toBe("CC");
+  });
+});
+
+describe("formatStickerDisplayNumber", () => {
+  it("keeps the FIFA special 00 visible to the user", () => {
+    expect(
+      formatStickerDisplayNumber({
+        code: "FWC00",
+        localNumber: 0,
+        label: "Panini Logo",
+        isBaseAlbum: true,
+        special: true,
+        quantity: 0,
+      }),
+    ).toBe("00");
+  });
+
+  it("uses the regular local number for normal stickers", () => {
+    expect(formatStickerDisplayNumber(sections[0].stickers[1])).toBe("2");
   });
 });
 

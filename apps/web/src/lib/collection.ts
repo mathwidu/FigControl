@@ -112,6 +112,12 @@ export function getSectionDisplayCode(section: WebSection): string {
   return initials.slice(0, 3) || section.slug.slice(0, 3).toUpperCase();
 }
 
+export function formatStickerDisplayNumber(sticker: WebSticker): string {
+  const codeNumber = sticker.code.match(/^[A-Z]+(0+)$/)?.[1];
+
+  return codeNumber ?? String(sticker.localNumber);
+}
+
 export function getOfflineMutationMessage(): string {
   return "Voce esta offline. E preciso conectar novamente para alterar sua colecao sincronizada.";
 }

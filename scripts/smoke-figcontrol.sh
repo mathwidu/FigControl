@@ -44,8 +44,8 @@ const data = JSON.parse(fs.readFileSync(process.env.FILE, "utf8"));
 if (data.baseStickerCount !== 980) {
   throw new Error(`baseStickerCount esperado 980, recebido ${data.baseStickerCount}`);
 }
-if (data.trackedStickerCount !== 992) {
-  throw new Error(`trackedStickerCount esperado 992, recebido ${data.trackedStickerCount}`);
+if (data.trackedStickerCount !== 994) {
+  throw new Error(`trackedStickerCount esperado 994, recebido ${data.trackedStickerCount}`);
 }
 if (!Array.isArray(data.sections) || data.sections.length < 49) {
   throw new Error("Catalogo sem secoes esperadas.");
@@ -90,7 +90,7 @@ const data = JSON.parse(fs.readFileSync(process.env.FILE, "utf8"));
 if (data.summary?.base?.total !== 980) {
   throw new Error("Resumo base autenticado inconsistente.");
 }
-if (data.summary?.tracked?.total !== 992) {
+if (data.summary?.tracked?.total !== 994) {
   throw new Error("Resumo total autenticado inconsistente.");
 }
 '

@@ -1,13 +1,13 @@
-import { PrismaClient } from '@prisma/client';
-import { validateCatalogSeed } from '@figcontrol/shared';
-import { worldCup2026Seed } from '../src/catalog/world-cup-2026.seed';
+import { PrismaClient } from "@prisma/client";
+import { validateCatalogSeed } from "@figcontrol/shared";
+import { worldCup2026Seed } from "../src/catalog/world-cup-2026.seed";
 
 const prisma = new PrismaClient();
 
 async function main() {
   const validation = validateCatalogSeed(worldCup2026Seed);
   if (!validation.valid) {
-    throw new Error(`Invalid catalog seed:\n${validation.errors.join('\n')}`);
+    throw new Error(`Invalid catalog seed:\n${validation.errors.join("\n")}`);
   }
 
   await prisma.$transaction(async (tx) => {
@@ -16,36 +16,50 @@ async function main() {
       update: {
         name: worldCup2026Seed.name,
         baseStickerCount: worldCup2026Seed.baseStickerCount,
-        trackedStickerCount: worldCup2026Seed.trackedStickerCount
+        trackedStickerCount: worldCup2026Seed.trackedStickerCount,
       },
       create: {
         slug: worldCup2026Seed.slug,
         name: worldCup2026Seed.name,
         baseStickerCount: worldCup2026Seed.baseStickerCount,
-        trackedStickerCount: worldCup2026Seed.trackedStickerCount
-      }
+        trackedStickerCount: worldCup2026Seed.trackedStickerCount,
+      },
     });
+
+    const existingFwc00 = await tx.sticker.findUnique({
+      where: { code: "FWC00" },
+      select: { id: true },
+    });
+
+    if (existingFwc00) {
+      await tx.sticker.deleteMany({ where: { code: "FWC0" } });
+    } else {
+      await tx.sticker.updateMany({
+        where: { code: "FWC0" },
+        data: { code: "FWC00" },
+      });
+    }
 
     for (const [sectionIndex, section] of worldCup2026Seed.sections.entries()) {
       const storedSection = await tx.stickerSection.upsert({
         where: {
           collectionId_slug: {
             collectionId: collection.id,
-            slug: section.slug
-          }
+            slug: section.slug,
+          },
         },
         update: {
           name: section.name,
           kind: section.kind,
-          order: sectionIndex
+          order: sectionIndex,
         },
         create: {
           collectionId: collection.id,
           slug: section.slug,
           name: section.name,
           kind: section.kind,
-          order: sectionIndex
-        }
+          order: sectionIndex,
+        },
       });
 
       for (const [stickerIndex, sticker] of section.stickers.entries()) {
@@ -57,7 +71,7 @@ async function main() {
             label: sticker.label,
             isBaseAlbum: sticker.isBaseAlbum,
             special: sticker.special ?? false,
-            order: stickerIndex
+            order: stickerIndex,
           },
           create: {
             sectionId: storedSection.id,
@@ -66,8 +80,8 @@ async function main() {
             label: sticker.label,
             isBaseAlbum: sticker.isBaseAlbum,
             special: sticker.special ?? false,
-            order: stickerIndex
-          }
+            order: stickerIndex,
+          },
         });
       }
     }

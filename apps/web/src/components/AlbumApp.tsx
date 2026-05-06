@@ -43,6 +43,7 @@ import {
 } from "../lib/api";
 import {
   filterSectionStickersByOwnership,
+  formatStickerDisplayNumber,
   getOfflineMutationMessage,
   getSectionDisplayCode,
   summarizeSectionProgress,
@@ -1132,7 +1133,9 @@ function StickerTile({
         aria-label={actionLabel}
       >
         <span className="sticker-code">{sticker.code}</span>
-        <span className="sticker-number">{sticker.localNumber}</span>
+        <span className="sticker-number">
+          {formatStickerDisplayNumber(sticker)}
+        </span>
         <span className="sticker-card-meta">{metaLabel}</span>
       </button>
     </article>
@@ -1215,16 +1218,20 @@ function buildSectionDuplicateText(
   collectionName: string,
   section: WebSection,
 ): string {
-  const duplicateCodes = section.stickers
-    .filter((sticker) => sticker.quantity > 1)
-    .map((sticker) => `${sticker.code} x${sticker.quantity - 1}`);
-
-  return [
-    `*${collectionName}*`,
-    "",
-    `*Repetidas - ${section.name}*`,
-    ...(duplicateCodes.length > 0 ? duplicateCodes : ["Sem repetidas."]),
-  ].join("\n");
+  return buildStickerListShareText({
+    collectionName,
+    mode: "duplicates",
+    sections: [
+      {
+        name: section.name,
+        stickers: section.stickers.map((sticker) => ({
+          code: sticker.code,
+          label: sticker.label,
+          quantity: sticker.quantity,
+        })),
+      },
+    ],
+  });
 }
 
 function buildCollectionShareText(

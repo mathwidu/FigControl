@@ -247,7 +247,7 @@ curl -sS https://figcontrol-api-dev.matheusduarte.dev.br/admin/dashboard \
 Esperado:
 
 - `summary.base.total = 980`
-- `summary.tracked.total = 992`
+- `summary.tracked.total = 994`
 - `BRA20` com `quantity = 2`
 
 ## Rollback
