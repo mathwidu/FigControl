@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   filterSectionStickersByOwnership,
   filterCollectionSections,
+  formatStickerDisplayCode,
   formatStickerDisplayNumber,
   getOfflineMutationMessage,
   getSectionDisplayCode,
@@ -115,9 +116,28 @@ describe("getSectionDisplayCode", () => {
 });
 
 describe("formatStickerDisplayNumber", () => {
+  const openingSticker = {
+    code: "FWC00",
+    localNumber: 0,
+    label: "Panini Logo",
+    isBaseAlbum: true,
+    special: true,
+    quantity: 0,
+  };
+
   it("keeps the FIFA special 00 visible to the user", () => {
+    expect(formatStickerDisplayNumber(openingSticker)).toBe("00");
+  });
+
+  it("uses the regular local number for normal stickers", () => {
+    expect(formatStickerDisplayNumber(sections[0].stickers[1])).toBe("2");
+  });
+});
+
+describe("formatStickerDisplayCode", () => {
+  it("hides the technical FIFA prefix when the opening sticker is only zeroes", () => {
     expect(
-      formatStickerDisplayNumber({
+      formatStickerDisplayCode({
         code: "FWC00",
         localNumber: 0,
         label: "Panini Logo",
@@ -128,8 +148,8 @@ describe("formatStickerDisplayNumber", () => {
     ).toBe("00");
   });
 
-  it("uses the regular local number for normal stickers", () => {
-    expect(formatStickerDisplayNumber(sections[0].stickers[1])).toBe("2");
+  it("keeps regular sticker codes unchanged", () => {
+    expect(formatStickerDisplayCode(sections[0].stickers[1])).toBe("BRA2");
   });
 });
 

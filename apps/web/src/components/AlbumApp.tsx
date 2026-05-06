@@ -43,6 +43,7 @@ import {
 } from "../lib/api";
 import {
   filterSectionStickersByOwnership,
+  formatStickerDisplayCode,
   formatStickerDisplayNumber,
   getOfflineMutationMessage,
   getSectionDisplayCode,
@@ -1013,7 +1014,7 @@ function SectionDetail({
           <div className="code-pill-grid">
             {duplicateStickers.map((sticker) => (
               <span className="code-pill static" key={sticker.code}>
-                {sticker.code} x{sticker.quantity - 1}
+                {formatStickerDisplayCode(sticker)} x{sticker.quantity - 1}
               </span>
             ))}
           </div>
@@ -1105,14 +1106,15 @@ function StickerTile({
       : sticker.quantity > 1
         ? "duplicate"
         : "missing";
+  const displayCode = formatStickerDisplayCode(sticker);
   const actionLabel =
     mode === "missing" && transferring
-      ? `Salvando ${sticker.code}`
+      ? `Salvando ${displayCode}`
       : mode === "missing" && sticker.quantity === 0
-        ? `Marcar ${sticker.code} como tenho`
+        ? `Marcar ${displayCode} como tenho`
         : mode === "missing"
-          ? `Marcar ${sticker.code} como faltando`
-          : `Abrir ações de ${sticker.code}`;
+          ? `Marcar ${displayCode} como faltando`
+          : `Abrir ações de ${displayCode}`;
   const metaLabel =
     isMissingTab && sticker.quantity > 0
       ? "Tenho"
@@ -1132,7 +1134,7 @@ function StickerTile({
         onClick={onClick}
         aria-label={actionLabel}
       >
-        <span className="sticker-code">{sticker.code}</span>
+        <span className="sticker-code">{displayCode}</span>
         <span className="sticker-number">
           {formatStickerDisplayNumber(sticker)}
         </span>
@@ -1157,6 +1159,8 @@ function StickerActions({
 }) {
   if (typeof document === "undefined") return null;
 
+  const displayCode = formatStickerDisplayCode(sticker);
+
   return createPortal(
     <div className="sticker-actions-backdrop" role="presentation">
       <section
@@ -1166,7 +1170,7 @@ function StickerActions({
         <div className="sticker-actions-heading">
           <div>
             <p className="eyebrow">Figurinha</p>
-            <h3 id="sticker-actions-title">{sticker.code}</h3>
+            <h3 id="sticker-actions-title">{displayCode}</h3>
           </div>
           <button
             className="icon-button subtle"

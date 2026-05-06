@@ -118,6 +118,12 @@ export function formatStickerDisplayNumber(sticker: WebSticker): string {
   return codeNumber ?? String(sticker.localNumber);
 }
 
+export function formatStickerDisplayCode(sticker: WebSticker): string {
+  const zeroCode = sticker.code.match(/^[A-Z]+(0+)$/)?.[1];
+
+  return zeroCode ?? sticker.code;
+}
+
 export function getOfflineMutationMessage(): string {
   return "Voce esta offline. E preciso conectar novamente para alterar sua colecao sincronizada.";
 }
