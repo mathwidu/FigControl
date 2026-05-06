@@ -49,6 +49,10 @@ export const ANALYTICS_EVENT_TYPES = [
   "duplicate_removed",
   "share_missing_clicked",
   "share_duplicates_clicked",
+  "profile_prompt_opened",
+  "profile_prompt_skipped",
+  "profile_saved",
+  "leaderboard_joined",
 ] as const;
 
 export type AnalyticsEventType = (typeof ANALYTICS_EVENT_TYPES)[number];
@@ -90,6 +94,63 @@ export interface AdminUserMetric {
   markedStickers: number;
   duplicateStickers: number;
   totalQuantity: number;
+}
+
+export type LeaderboardEligibilityReason =
+  | "EMAIL_NOT_VERIFIED"
+  | "PROFILE_INCOMPLETE"
+  | "NICKNAME_REQUIRED"
+  | "CITY_REQUIRED"
+  | "STATE_REQUIRED";
+
+export interface UserProfileDto {
+  nickname: string | null;
+  cityName: string | null;
+  stateCode: string | null;
+  exchangeOptIn: boolean;
+  leaderboardJoinedAt: string | null;
+  profileCompletedAt: string | null;
+  leaderboardEligible: boolean;
+  leaderboardEligibilityReasons: LeaderboardEligibilityReason[];
+}
+
+export interface NicknameAvailabilityDto {
+  nickname: string;
+  available: boolean;
+  reason: string | null;
+}
+
+export interface UpdateProfileDto {
+  nickname?: string;
+  cityName?: string;
+  stateCode?: string;
+  exchangeOptIn?: boolean;
+}
+
+export interface LeaderboardItemDto {
+  rank: number;
+  nickname: string;
+  cityName: string;
+  stateCode: string;
+  trackedHave: number;
+  trackedMissing: number;
+  duplicateCount: number;
+}
+
+export interface LeaderboardMeDto {
+  rank: number | null;
+  trackedHave: number;
+  trackedMissing: number;
+  duplicateCount: number;
+  joined: boolean;
+  eligible: boolean;
+}
+
+export interface LeaderboardDto {
+  collectionSlug: string;
+  total: number;
+  items: LeaderboardItemDto[];
+  me: LeaderboardMeDto | null;
 }
 
 export interface AdminDashboard {
