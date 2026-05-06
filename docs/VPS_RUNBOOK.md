@@ -250,6 +250,32 @@ Esperado:
 - `summary.tracked.total = 994`
 - `BRA20` com `quantity = 2`
 
+### Backfill do ranking
+
+Depois do deploy da Fase 2, rode o backfill uma vez por ambiente para criar a projeção de ranking dos usuários existentes. O script é idempotente e pode ser repetido.
+
+DEV:
+
+```bash
+CID="$(docker ps -q --filter name=figcontrol-dev_api | head -n 1)"
+docker exec "$CID" npm run backfill:collection-stats --workspace apps/api
+```
+
+PROD:
+
+```bash
+CID="$(docker ps -q --filter name=figcontrol_api | head -n 1)"
+docker exec "$CID" npm run backfill:collection-stats --workspace apps/api
+```
+
+Validação rápida no Postgres:
+
+```bash
+PGID="$(docker ps -q -f name=postgres_postgres | head -n 1)"
+docker exec "$PGID" psql -U postgres -d figcontrol_dev_db -tAc "SELECT COUNT(*) FROM user_collection_stats;"
+docker exec "$PGID" psql -U postgres -d figcontrol_db -tAc "SELECT COUNT(*) FROM user_collection_stats;"
+```
+
 ## Rollback
 
 Use a imagem anterior do service:
