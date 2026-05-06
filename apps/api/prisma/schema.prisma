@@ -25,6 +25,8 @@ model User {
   passwordResetTokens     PasswordResetToken[]
   quantities              UserStickerQuantity[]
   analyticsEvents         AnalyticsEvent[]
+  profile                 UserProfile?
+  collectionStats         UserCollectionStats[]
 
   @@map("users")
 }
@@ -77,6 +79,7 @@ model Collection {
   createdAt           DateTime         @default(now()) @map("created_at")
   updatedAt           DateTime         @updatedAt @map("updated_at")
   sections            StickerSection[]
+  userStats           UserCollectionStats[]
 
   @@map("collections")
 }
@@ -122,6 +125,44 @@ model UserStickerQuantity {
 
   @@id([userId, stickerId])
   @@map("user_sticker_quantities")
+}
+
+model UserProfile {
+  userId                String    @id @map("user_id")
+  nickname              String?
+  nicknameNormalized    String?   @unique @map("nickname_normalized")
+  cityName              String?   @map("city_name")
+  stateCode             String?   @map("state_code")
+  exchangeOptIn         Boolean   @default(false) @map("exchange_opt_in")
+  leaderboardJoinedAt   DateTime? @map("leaderboard_joined_at")
+  profileCompletedAt    DateTime? @map("profile_completed_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([leaderboardJoinedAt])
+  @@index([stateCode, cityName])
+  @@map("user_profiles")
+}
+
+model UserCollectionStats {
+  userId         String     @map("user_id")
+  collectionId   String     @map("collection_id")
+  trackedHave    Int        @default(0) @map("tracked_have")
+  trackedMissing Int        @default(0) @map("tracked_missing")
+  baseHave       Int        @default(0) @map("base_have")
+  baseMissing    Int        @default(0) @map("base_missing")
+  duplicateCount Int        @default(0) @map("duplicate_count")
+  lastProgressAt DateTime?  @map("last_progress_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection     Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, collectionId])
+  @@index([collectionId, trackedHave, trackedMissing])
+  @@index([lastProgressAt])
+  @@map("user_collection_stats")
 }
 
 model AnalyticsEvent {
