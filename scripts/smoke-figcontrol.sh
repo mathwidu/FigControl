@@ -10,7 +10,7 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
 curl_json() {
-  curl -fsS --retry 3 --retry-delay 2 "$@"
+  curl -fsS --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 "$@"
 }
 
 echo "Smoke: API health em ${API_URL}"

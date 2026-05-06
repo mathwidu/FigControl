@@ -249,6 +249,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy_swarm
     if: github.event_name == 'push'
+    timeout-minutes: 5
 
     steps:
       - name: Checkout
