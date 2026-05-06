@@ -17,6 +17,18 @@ export default function PrivacyPage() {
         e proteger o serviço contra abuso.
       </p>
       <p>
+        Se você completar o perfil, armazenaremos também apelido, cidade, estado,
+        participação no ranking e preferência de aparecer em futuras
+        funcionalidades de troca. No ranking, exibimos apenas apelido, cidade,
+        estado e progresso total da coleção; seu e-mail não é exibido.
+      </p>
+      <p>
+        A participação no ranking é opcional. Depois de entrar, a opção de saída
+        não fica disponível diretamente no app para manter a consistência da
+        classificação, mas solicitações de suporte, exclusão ou remoção de dados
+        podem ser feitas pelos canais abaixo.
+      </p>
+      <p>
         E-mails transacionais, como verificação de conta e redefinição de senha,
         podem ser enviados por um provedor externo, como o Resend.
       </p>

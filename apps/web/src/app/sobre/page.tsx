@@ -20,6 +20,18 @@ export default function AboutPage() {
         da coleção no Brasil. O app é independente e não representa uma fonte
         oficial da Panini, FIFA, Coca-Cola ou de qualquer seleção.
       </p>
+      <h2>Fase 2</h2>
+      <p>
+        A primeira versão nasceu como um controle individual de coleção. A fase
+        2 evolui essa ideia com perfil, apelido, cidade e ranking por progresso
+        total, criando a base para uma futura experiência de troca entre pessoas
+        que tenham figurinhas complementares.
+      </p>
+      <p>
+        A busca por parceiros de troca ainda não está ativa. Antes disso, o
+        projeto prioriza validar o ranking, melhorar a experiência do perfil e
+        manter a privacidade dos colecionadores clara desde o início.
+      </p>
       <h2>Responsável pelo projeto</h2>
       <p>
         Desenvolvido e mantido por Matheus Duarte. Você pode acompanhar o código

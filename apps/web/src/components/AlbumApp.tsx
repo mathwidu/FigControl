@@ -13,6 +13,8 @@ import {
   Plus,
   Repeat2,
   Share2,
+  Trophy,
+  UserRound,
   WifiOff,
   X,
 } from "lucide-react";
@@ -20,6 +22,7 @@ import {
   buildStickerListShareText,
   evaluatePasswordPolicy,
 } from "@figcontrol/shared";
+import Link from "next/link";
 import {
   type CSSProperties,
   FormEvent,
@@ -32,6 +35,7 @@ import type { AnalyticsEventType } from "@figcontrol/shared";
 import { createPortal } from "react-dom";
 import {
   getCollection,
+  getProfile,
   login,
   refresh,
   register,
@@ -62,6 +66,7 @@ import {
   saveCollection,
 } from "../lib/storage";
 import { PasswordField } from "./PasswordField";
+import { ProfilePrompt } from "./ProfilePrompt";
 
 type AuthMode = "login" | "register" | "forgot";
 type DetailTab = StickerOwnershipTab;
@@ -99,7 +104,9 @@ export function AlbumApp() {
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [installEvent, setInstallEvent] = useState<Event | null>(null);
+  const [profilePromptOpen, setProfilePromptOpen] = useState(false);
   const trackedAppOpenUserRef = useRef<string | null>(null);
+  const checkedProfilePromptUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     setAuth(loadAuth());
@@ -140,6 +147,19 @@ export function AlbumApp() {
 
     trackedAppOpenUserRef.current = auth.user.id;
     trackAppEvent(auth, "app_opened");
+  }, [auth, isOnline]);
+
+  useEffect(() => {
+    if (
+      !auth ||
+      !isOnline ||
+      checkedProfilePromptUserRef.current === auth.user.id
+    ) {
+      return;
+    }
+
+    checkedProfilePromptUserRef.current = auth.user.id;
+    void maybeOpenProfilePrompt(auth);
   }, [auth, isOnline]);
 
   useEffect(() => {
@@ -293,6 +313,20 @@ export function AlbumApp() {
     }
   }
 
+  async function maybeOpenProfilePrompt(tokens: AuthTokens) {
+    try {
+      const profile = await getProfile(tokens.accessToken);
+      const skippedKey = profilePromptSkipKey(tokens.user.id);
+
+      if (!profile.profileCompletedAt && !sessionStorage.getItem(skippedKey)) {
+        setProfilePromptOpen(true);
+        trackAppEvent(tokens, "profile_prompt_opened");
+      }
+    } catch {
+      // The album remains usable even if the profile prompt cannot load.
+    }
+  }
+
   async function changeQuantity(
     sticker: WebSticker,
     nextQuantity: number,
@@ -353,6 +387,7 @@ export function AlbumApp() {
     setAuth(null);
     setCollection(null);
     setActiveSectionSlug(null);
+    setProfilePromptOpen(false);
   }
 
   async function install() {
@@ -606,6 +641,20 @@ export function AlbumApp() {
           <h1>Controle de Figurinhas 2026</h1>
         </div>
         <div className="hero-actions">
+          <Link
+            className="icon-button translucent"
+            href="/ranking"
+            title="Ranking"
+          >
+            <Trophy size={18} />
+          </Link>
+          <Link
+            className="icon-button translucent"
+            href="/perfil"
+            title="Perfil"
+          >
+            <UserRound size={18} />
+          </Link>
           {auth.user.isAdmin ? (
             <a className="icon-button translucent" href="/admin" title="Painel">
               <BarChart3 size={18} />
@@ -688,8 +737,23 @@ export function AlbumApp() {
           </aside>
         ) : null}
       </div>
+
+      {profilePromptOpen ? (
+        <ProfilePrompt
+          accessToken={auth.accessToken}
+          onSaved={() => setProfilePromptOpen(false)}
+          onSkip={() => {
+            sessionStorage.setItem(profilePromptSkipKey(auth.user.id), "1");
+            setProfilePromptOpen(false);
+          }}
+        />
+      ) : null}
     </div>
   );
+}
+
+function profilePromptSkipKey(userId: string): string {
+  return `figcontrol.profilePromptSkipped.${userId}.v1`;
 }
 
 function trackAppEvent(

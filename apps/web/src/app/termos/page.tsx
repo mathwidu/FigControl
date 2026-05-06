@@ -26,6 +26,18 @@ export default function TermsPage() {
         segurança, a integridade ou o funcionamento da aplicação.
       </p>
       <p>
+        O ranking é uma funcionalidade opcional de competição saudável entre
+        colecionadores. Ao participar, você autoriza a exibição do seu apelido,
+        cidade, estado e progresso total da coleção. Não use apelidos ofensivos,
+        dados de terceiros, marcas indevidas ou informações que possam violar
+        direitos de outras pessoas.
+      </p>
+      <p>
+        A preferência de aparecer em futuras funcionalidades de troca indica
+        apenas interesse do usuário. O FigControl não intermedeia pagamentos,
+        vendas, entregas ou acordos entre colecionadores.
+      </p>
+      <p>
         O FigControl pode ficar temporariamente indisponível por manutenção,
         atualização, falha técnica ou fatores externos. Sempre que possível,
         trabalharemos para preservar seus dados de progresso e restaurar o
@@ -37,13 +49,13 @@ export default function TermsPage() {
       </p>
       <ul>
         <li>
-          GitHub:{' '}
+          GitHub:{" "}
           <a href="https://github.com/mathwidu" rel="noreferrer" target="_blank">
             github.com/mathwidu
           </a>
         </li>
         <li>
-          LinkedIn:{' '}
+          LinkedIn:{" "}
           <a
             href="https://www.linkedin.com/in/matheus-wduarte/"
             rel="noreferrer"

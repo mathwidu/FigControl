@@ -1,4 +1,11 @@
-import type { AdminDashboard, AnalyticsEventType } from "@figcontrol/shared";
+import type {
+  AdminDashboard,
+  AnalyticsEventType,
+  LeaderboardDto,
+  NicknameAvailabilityDto,
+  UpdateProfileDto,
+  UserProfileDto,
+} from "@figcontrol/shared";
 import type { WebCollection } from "./collection";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -88,6 +95,52 @@ export async function getCollection(
   accessToken: string,
 ): Promise<WebCollection> {
   return request("/me/collection/world-cup-2026", {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export async function getProfile(accessToken: string): Promise<UserProfileDto> {
+  return request("/me/profile", {
+    headers: authHeaders(accessToken),
+  });
+}
+
+export async function updateProfile(
+  accessToken: string,
+  profile: UpdateProfileDto,
+): Promise<UserProfileDto> {
+  return request("/me/profile", {
+    method: "PATCH",
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(profile),
+  });
+}
+
+export async function checkNicknameAvailability(
+  accessToken: string,
+  nickname: string,
+): Promise<NicknameAvailabilityDto> {
+  return request(
+    `/profiles/nickname-availability?nickname=${encodeURIComponent(nickname)}`,
+    {
+      headers: authHeaders(accessToken),
+    },
+  );
+}
+
+export async function joinLeaderboard(
+  accessToken: string,
+): Promise<UserProfileDto> {
+  return request("/me/profile/leaderboard/join", {
+    method: "POST",
+    headers: authHeaders(accessToken),
+  });
+}
+
+export async function getLeaderboard(
+  accessToken: string,
+): Promise<LeaderboardDto> {
+  return request("/leaderboard/world-cup-2026", {
     headers: authHeaders(accessToken),
   });
 }
