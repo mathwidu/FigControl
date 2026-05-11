@@ -97,7 +97,14 @@ describe("LeaderboardService", () => {
         leaderboardEligible: true,
       }),
     };
-    const service = new LeaderboardService(prisma as never, profiles as never);
+    const collectionStats = {
+      ensureUserStats: vi.fn().mockResolvedValue(undefined),
+    };
+    const service = new LeaderboardService(
+      prisma as never,
+      profiles as never,
+      collectionStats as never,
+    );
 
     const leaderboard = await service.getLeaderboard("user-1", "world-cup-2026");
 
@@ -125,7 +132,7 @@ describe("LeaderboardService", () => {
     });
   });
 
-  it("includes joined profiles even before collection stats are created", async () => {
+  it("hydrates the current joined user stats before ranking joined profiles", async () => {
     const joinedAt = new Date("2026-05-10T20:00:00.000Z");
     const prisma = {
       collection: {
@@ -144,14 +151,25 @@ describe("LeaderboardService", () => {
             stateCode: "RS",
             leaderboardJoinedAt: joinedAt,
             user: {
-              collectionStats: [],
+              collectionStats: [
+                {
+                  trackedHave: 6,
+                  trackedMissing: 988,
+                  duplicateCount: 1,
+                  lastProgressAt: new Date("2026-05-10T21:00:00.000Z"),
+                },
+              ],
             },
           },
         ]),
       },
       userCollectionStats: {
         findMany: vi.fn().mockResolvedValue([]),
-        findUnique: vi.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue({
+          trackedHave: 6,
+          trackedMissing: 988,
+          duplicateCount: 1,
+        }),
       },
     };
     const profiles = {
@@ -160,26 +178,37 @@ describe("LeaderboardService", () => {
         leaderboardEligible: true,
       }),
     };
-    const service = new LeaderboardService(prisma as never, profiles as never);
+    const collectionStats = {
+      ensureUserStats: vi.fn().mockResolvedValue(undefined),
+    };
+    const service = new LeaderboardService(
+      prisma as never,
+      profiles as never,
+      collectionStats as never,
+    );
 
     const leaderboard = await service.getLeaderboard("user-1", "world-cup-2026");
 
+    expect(collectionStats.ensureUserStats).toHaveBeenCalledWith(
+      "user-1",
+      "world-cup-2026",
+    );
     expect(leaderboard.items).toEqual([
       {
         rank: 1,
         nickname: "mathwidu",
         cityName: "Igrejinha",
         stateCode: "RS",
-        trackedHave: 0,
-        trackedMissing: 994,
-        duplicateCount: 0,
+        trackedHave: 6,
+        trackedMissing: 988,
+        duplicateCount: 1,
       },
     ]);
     expect(leaderboard.me).toEqual({
       rank: 1,
-      trackedHave: 0,
-      trackedMissing: 994,
-      duplicateCount: 0,
+      trackedHave: 6,
+      trackedMissing: 988,
+      duplicateCount: 1,
       joined: true,
       eligible: true,
     });

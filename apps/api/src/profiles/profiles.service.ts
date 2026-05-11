@@ -12,11 +12,14 @@ import type {
   UserProfileDto,
 } from "@figcontrol/shared";
 import { AnalyticsService } from "../analytics/analytics.service";
+import { CollectionStatsService } from "../leaderboard/collection-stats.service";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   normalizeNickname,
   validateProfileInput,
 } from "./profile-validation";
+
+const WORLD_CUP_2026_COLLECTION_SLUG = "world-cup-2026";
 
 type ProfileRecord = {
   userId: string;
@@ -40,6 +43,7 @@ export class ProfilesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly analyticsService: AnalyticsService,
+    private readonly collectionStatsService: CollectionStatsService,
   ) {}
 
   async getProfile(userId: string): Promise<UserProfileDto> {
@@ -155,6 +159,11 @@ export class ProfilesService {
     if (user.profile?.leaderboardJoinedAt) {
       return profile;
     }
+
+    await this.collectionStatsService.recalculateUserStats(
+      userId,
+      WORLD_CUP_2026_COLLECTION_SLUG,
+    );
 
     const saved = await this.prisma.userProfile.update({
       where: { userId },

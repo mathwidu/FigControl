@@ -5,6 +5,31 @@ import { PrismaService } from "../prisma/prisma.service";
 export class CollectionStatsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async ensureUserStats(userId: string, collectionSlug: string) {
+    const collection = await this.prisma.collection.findUnique({
+      where: { slug: collectionSlug },
+      select: { id: true },
+    });
+
+    if (!collection) {
+      throw new NotFoundException("Collection not found.");
+    }
+
+    const stats = await this.prisma.userCollectionStats.findUnique({
+      where: {
+        userId_collectionId: {
+          userId,
+          collectionId: collection.id,
+        },
+      },
+      select: { userId: true },
+    });
+
+    if (!stats) {
+      await this.recalculateUserStats(userId, collectionSlug);
+    }
+  }
+
   async recalculateUserStats(userId: string, collectionSlug: string) {
     const collection = await this.prisma.collection.findUnique({
       where: { slug: collectionSlug },

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type { LeaderboardDto, LeaderboardItemDto } from "@figcontrol/shared";
 import { PrismaService } from "../prisma/prisma.service";
 import { ProfilesService } from "../profiles/profiles.service";
+import { CollectionStatsService } from "./collection-stats.service";
 
 type LeaderboardRow = {
   userId: string;
@@ -38,6 +39,7 @@ export class LeaderboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly profilesService: ProfilesService,
+    private readonly collectionStatsService: CollectionStatsService,
   ) {}
 
   async getLeaderboard(
@@ -55,6 +57,12 @@ export class LeaderboardService {
 
     if (!collection) {
       throw new NotFoundException("Collection not found.");
+    }
+
+    const profile = await this.profilesService.getProfile(userId);
+
+    if (profile.leaderboardJoinedAt) {
+      await this.collectionStatsService.ensureUserStats(userId, collectionSlug);
     }
 
     const profileRows = await this.prisma.userProfile.findMany({
@@ -99,7 +107,6 @@ export class LeaderboardService {
     const items = rankedRows.slice(0, 100).map(({ row, rank }) =>
       toLeaderboardItem(row, rank),
     );
-    const profile = await this.profilesService.getProfile(userId);
     const meRow = rankedRows.find(({ row }) => row.userId === userId);
     const meStats =
       meRow?.row ??

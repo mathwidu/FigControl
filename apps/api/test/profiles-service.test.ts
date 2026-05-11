@@ -17,11 +17,19 @@ function createService(overrides: Record<string, unknown> = {}) {
   const analytics = {
     track: vi.fn().mockResolvedValue(undefined),
   };
+  const collectionStats = {
+    recalculateUserStats: vi.fn().mockResolvedValue(undefined),
+  };
 
   return {
     prisma,
     analytics,
-    service: new ProfilesService(prisma as never, analytics as never),
+    collectionStats,
+    service: new ProfilesService(
+      prisma as never,
+      analytics as never,
+      collectionStats as never,
+    ),
   };
 }
 
@@ -104,7 +112,7 @@ describe("ProfilesService", () => {
 
   it("joins leaderboard only with a complete verified profile", async () => {
     const joinedAt = new Date("2026-05-01T00:00:00.000Z");
-    const { prisma, analytics, service } = createService();
+    const { prisma, analytics, collectionStats, service } = createService();
     prisma.user.findUnique.mockResolvedValue({
       id: "user-1",
       emailVerifiedAt: joinedAt,
@@ -137,6 +145,10 @@ describe("ProfilesService", () => {
       userId: "user-1",
       eventType: "leaderboard_joined",
     });
+    expect(collectionStats.recalculateUserStats).toHaveBeenCalledWith(
+      "user-1",
+      "world-cup-2026",
+    );
   });
 
   it("blocks leaderboard join when profile is incomplete", async () => {
