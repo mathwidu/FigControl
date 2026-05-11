@@ -218,6 +218,7 @@ jobs:
           port: ${{ secrets.VPS_PORT || 22 }}
           envs: GHCR_USER,GHCR_TOKEN,API_IMAGE,WEB_IMAGE,API_SERVICE,WEB_SERVICE
           script_stop: true
+          command_timeout: 30m
           script: |
             set -euo pipefail
             [ -n "${GHCR_USER}" ] || { echo "GHCR_READ_USERNAME vazio"; exit 1; }
