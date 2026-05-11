@@ -21,6 +21,7 @@ import {
 import {
   buildStickerListShareText,
   evaluatePasswordPolicy,
+  type UserProfileDto,
 } from "@figcontrol/shared";
 import Link from "next/link";
 import {
@@ -105,6 +106,8 @@ export function AlbumApp() {
   const [isOnline, setIsOnline] = useState(true);
   const [installEvent, setInstallEvent] = useState<Event | null>(null);
   const [profilePromptOpen, setProfilePromptOpen] = useState(false);
+  const [profile, setProfile] = useState<UserProfileDto | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const trackedAppOpenUserRef = useRef<string | null>(null);
   const checkedProfilePromptUserRef = useRef<string | null>(null);
 
@@ -315,14 +318,20 @@ export function AlbumApp() {
 
   async function maybeOpenProfilePrompt(tokens: AuthTokens) {
     try {
-      const profile = await getProfile(tokens.accessToken);
+      const nextProfile = await getProfile(tokens.accessToken);
+      setProfile(nextProfile);
+      setProfileLoaded(true);
       const skippedKey = profilePromptSkipKey(tokens.user.id);
 
-      if (!profile.profileCompletedAt && !sessionStorage.getItem(skippedKey)) {
+      if (
+        !nextProfile.leaderboardJoinedAt &&
+        shouldShowProfilePrompt(skippedKey)
+      ) {
         setProfilePromptOpen(true);
         trackAppEvent(tokens, "profile_prompt_opened");
       }
     } catch {
+      setProfileLoaded(true);
       // The album remains usable even if the profile prompt cannot load.
     }
   }
@@ -388,6 +397,9 @@ export function AlbumApp() {
     setCollection(null);
     setActiveSectionSlug(null);
     setProfilePromptOpen(false);
+    setProfile(null);
+    setProfileLoaded(false);
+    checkedProfilePromptUserRef.current = null;
   }
 
   async function install() {
@@ -707,6 +719,9 @@ export function AlbumApp() {
             collection={collection}
             sections={collection.sections}
             activeSectionSlug={activeSectionSlug}
+            profile={profile}
+            profileLoaded={profileLoaded}
+            onOpenProfilePrompt={() => setProfilePromptOpen(true)}
             onOpenSection={openSection}
             onShareMissing={() => shareCollection("missing")}
             onShareDuplicates={() => shareCollection("duplicates")}
@@ -741,9 +756,13 @@ export function AlbumApp() {
       {profilePromptOpen ? (
         <ProfilePrompt
           accessToken={auth.accessToken}
-          onSaved={() => setProfilePromptOpen(false)}
+          profile={profile}
+          onSaved={(nextProfile) => {
+            setProfile(nextProfile);
+            setProfilePromptOpen(false);
+          }}
           onSkip={() => {
-            sessionStorage.setItem(profilePromptSkipKey(auth.user.id), "1");
+            dismissProfilePrompt(profilePromptSkipKey(auth.user.id));
             setProfilePromptOpen(false);
           }}
         />
@@ -754,6 +773,20 @@ export function AlbumApp() {
 
 function profilePromptSkipKey(userId: string): string {
   return `figcontrol.profilePromptSkipped.${userId}.v1`;
+}
+
+function shouldShowProfilePrompt(key: string): boolean {
+  const rawValue = localStorage.getItem(key);
+  if (!rawValue) return true;
+
+  const dismissedAt = Number(rawValue);
+  if (!Number.isFinite(dismissedAt)) return true;
+
+  return Date.now() - dismissedAt > 7 * 24 * 60 * 60 * 1000;
+}
+
+function dismissProfilePrompt(key: string) {
+  localStorage.setItem(key, String(Date.now()));
 }
 
 function trackAppEvent(
@@ -801,6 +834,9 @@ function AlbumHome({
   collection,
   sections,
   activeSectionSlug,
+  profile,
+  profileLoaded,
+  onOpenProfilePrompt,
   onOpenSection,
   onShareMissing,
   onShareDuplicates,
@@ -808,6 +844,9 @@ function AlbumHome({
   collection: WebCollection;
   sections: WebSection[];
   activeSectionSlug: string | null;
+  profile: UserProfileDto | null;
+  profileLoaded: boolean;
+  onOpenProfilePrompt: () => void;
   onOpenSection: (section: WebSection) => void;
   onShareMissing: () => void;
   onShareDuplicates: () => void;
@@ -823,6 +862,12 @@ function AlbumHome({
         </div>
         <span>{sections.length} secoes</span>
       </div>
+      {profileLoaded ? (
+        <LeaderboardHomeCard
+          profile={profile}
+          onOpenProfilePrompt={onOpenProfilePrompt}
+        />
+      ) : null}
       <div className="home-action-row" aria-label="Compartilhar colecao">
         <button
           className="text-button primary"
@@ -861,6 +906,60 @@ function AlbumHome({
         ))}
       </div>
     </div>
+  );
+}
+
+function LeaderboardHomeCard({
+  profile,
+  onOpenProfilePrompt,
+}: {
+  profile: UserProfileDto | null;
+  onOpenProfilePrompt: () => void;
+}) {
+  const joined = Boolean(profile?.leaderboardJoinedAt);
+  const profileComplete = Boolean(profile?.profileCompletedAt);
+
+  if (joined) {
+    return (
+      <section className="leaderboard-home-card joined">
+        <div>
+          <p className="eyebrow">Você está no ranking</p>
+          <h3>Acompanhe sua posição na corrida.</h3>
+          <p>
+            Continue marcando suas figurinhas para subir no placar da Copa 2026.
+          </p>
+        </div>
+        <Link className="text-button primary" href="/ranking">
+          <Trophy size={17} />
+          Ver ranking
+        </Link>
+      </section>
+    );
+  }
+
+  return (
+    <section className="leaderboard-home-card">
+      <div>
+        <p className="eyebrow">Ranking liberado</p>
+        <h3>
+          {profileComplete
+            ? "Seu perfil está pronto para entrar no placar."
+            : "Crie seu apelido e entre na disputa."}
+        </h3>
+        <p>
+          Veja quem está mais perto de completar o álbum e transforme sua
+          coleção em uma corrida com outros colecionadores.
+        </p>
+      </div>
+      <button
+        className="text-button primary"
+        type="button"
+        onClick={onOpenProfilePrompt}
+      >
+        <Trophy size={17} />
+        {profileComplete ? "Entrar no ranking" : "Completar perfil"}
+      </button>
+    </section>
   );
 }
 

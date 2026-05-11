@@ -9,6 +9,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   checkNicknameAvailability,
+  joinLeaderboard,
   trackAnalyticsEvent,
   updateProfile,
 } from "../lib/api";
@@ -16,19 +17,23 @@ import { BRAZILIAN_STATES } from "../lib/profile";
 
 interface ProfilePromptProps {
   accessToken: string;
+  profile: UserProfileDto | null;
   onSaved: (profile: UserProfileDto) => void;
   onSkip: () => void;
 }
 
 export function ProfilePrompt({
   accessToken,
+  profile,
   onSaved,
   onSkip,
 }: ProfilePromptProps) {
-  const [nickname, setNickname] = useState("");
-  const [cityName, setCityName] = useState("");
-  const [stateCode, setStateCode] = useState("");
-  const [exchangeOptIn, setExchangeOptIn] = useState(false);
+  const [nickname, setNickname] = useState(profile?.nickname ?? "");
+  const [cityName, setCityName] = useState(profile?.cityName ?? "");
+  const [stateCode, setStateCode] = useState(profile?.stateCode ?? "");
+  const [exchangeOptIn, setExchangeOptIn] = useState(
+    profile?.exchangeOptIn ?? false,
+  );
   const [availability, setAvailability] =
     useState<NicknameAvailabilityDto | null>(null);
   const [checking, setChecking] = useState(false);
@@ -37,9 +42,14 @@ export function ProfilePrompt({
 
   useEffect(() => {
     const trimmedNickname = nickname.trim();
+    const currentNickname = profile?.nickname?.trim() ?? "";
 
-    if (trimmedNickname.length < 3) {
-      setAvailability(null);
+    if (trimmedNickname.length < 3 || trimmedNickname === currentNickname) {
+      setAvailability(
+        trimmedNickname.length >= 3 && trimmedNickname === currentNickname
+          ? { nickname: trimmedNickname, available: true, reason: null }
+          : null,
+      );
       setChecking(false);
       return;
     }
@@ -59,7 +69,7 @@ export function ProfilePrompt({
     }, 350);
 
     return () => window.clearTimeout(timeout);
-  }, [accessToken, nickname]);
+  }, [accessToken, nickname, profile?.nickname]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,13 +77,20 @@ export function ProfilePrompt({
     setSubmitting(true);
 
     try {
-      const profile = await updateProfile(accessToken, {
+      const savedProfile = await updateProfile(accessToken, {
         nickname,
         cityName,
         stateCode,
         exchangeOptIn,
       });
-      onSaved(profile);
+
+      if (!savedProfile.leaderboardJoinedAt) {
+        const joinedProfile = await joinLeaderboard(accessToken);
+        onSaved(joinedProfile);
+        return;
+      }
+
+      onSaved(savedProfile);
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Não foi possível salvar.",
@@ -107,7 +124,9 @@ export function ProfilePrompt({
         aria-labelledby="profile-prompt-title"
       >
         <div className="profile-prompt-heading">
-          <Trophy size={24} />
+          <div className="profile-prompt-icon">
+            <Trophy size={26} />
+          </div>
           <button
             className="icon-button subtle"
             type="button"
@@ -117,14 +136,23 @@ export function ProfilePrompt({
             <X size={18} />
           </button>
         </div>
-        <p className="eyebrow">Nova fase</p>
+        <p className="eyebrow">Ranking liberado</p>
         <h2 id="profile-prompt-title">Entre na corrida do álbum</h2>
         <p>
-          Escolha um apelido e informe sua cidade para aparecer no ranking. Você
-          pode completar isso agora ou depois em Perfil.
+          O FigControl agora tem um placar da Copa 2026. Complete seu perfil,
+          escolha seu apelido e veja quem está mais perto de terminar a coleção.
         </p>
+        <div className="profile-prompt-benefits">
+          <span>Apelido público</span>
+          <span>Posição por progresso</span>
+          <span>Cidade no ranking</span>
+        </div>
         {message ? <div className="notice error">{message}</div> : null}
         <form className="form-grid" onSubmit={handleSubmit}>
+          <div className="profile-prompt-form-title">
+            <strong>Complete para participar</strong>
+            <span>Leva menos de um minuto.</span>
+          </div>
           <label className="field">
             <span>Apelido</span>
             <input
@@ -178,10 +206,10 @@ export function ProfilePrompt({
           <div className="button-row">
             <button className="text-button primary" type="submit" disabled={!canSave}>
               <CheckCircle2 size={17} />
-              {submitting ? "Salvando..." : "Salvar perfil"}
+              {submitting ? "Entrando..." : "Entrar no ranking"}
             </button>
             <button className="text-button" type="button" onClick={handleSkip}>
-              Depois
+              Agora não
             </button>
           </div>
         </form>
