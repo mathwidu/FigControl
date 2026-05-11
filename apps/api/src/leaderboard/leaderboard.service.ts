@@ -9,13 +9,27 @@ type LeaderboardRow = {
   trackedMissing: number;
   duplicateCount: number;
   lastProgressAt: Date | null;
+  profile: {
+    nickname: string | null;
+    cityName: string | null;
+    stateCode: string | null;
+    leaderboardJoinedAt: Date | null;
+  };
+};
+
+type LeaderboardProfileRow = {
+  userId: string;
+  nickname: string | null;
+  cityName: string | null;
+  stateCode: string | null;
+  leaderboardJoinedAt: Date | null;
   user: {
-    profile: {
-      nickname: string | null;
-      cityName: string | null;
-      stateCode: string | null;
-      leaderboardJoinedAt: Date | null;
-    } | null;
+    collectionStats: {
+      trackedHave: number;
+      trackedMissing: number;
+      duplicateCount: number;
+      lastProgressAt: Date | null;
+    }[];
   };
 };
 
@@ -43,35 +57,40 @@ export class LeaderboardService {
       throw new NotFoundException("Collection not found.");
     }
 
-    const rows = await this.prisma.userCollectionStats.findMany({
+    const profileRows = await this.prisma.userProfile.findMany({
       where: {
-        collectionId: collection.id,
-        user: {
-          profile: {
-            leaderboardJoinedAt: { not: null },
-          },
-        },
+        leaderboardJoinedAt: { not: null },
+        nickname: { not: null },
+        cityName: { not: null },
+        stateCode: { not: null },
       },
       select: {
         userId: true,
-        trackedHave: true,
-        trackedMissing: true,
-        duplicateCount: true,
-        lastProgressAt: true,
+        nickname: true,
+        cityName: true,
+        stateCode: true,
+        leaderboardJoinedAt: true,
         user: {
           select: {
-            profile: {
+            collectionStats: {
+              where: {
+                collectionId: collection.id,
+              },
+              take: 1,
               select: {
-                nickname: true,
-                cityName: true,
-                stateCode: true,
-                leaderboardJoinedAt: true,
+                trackedHave: true,
+                trackedMissing: true,
+                duplicateCount: true,
+                lastProgressAt: true,
               },
             },
           },
         },
       },
     });
+    const rows = profileRows.map((profileRow) =>
+      toLeaderboardRow(profileRow, collection.trackedStickerCount),
+    );
 
     const rankedRows = sortRows(rows).map((row, index) => ({
       row,
@@ -130,16 +149,42 @@ function sortRows(rows: LeaderboardRow[]) {
       return a.trackedMissing - b.trackedMissing;
     }
 
-    const progressDiff =
-      toTime(a.lastProgressAt, Number.POSITIVE_INFINITY) -
-      toTime(b.lastProgressAt, Number.POSITIVE_INFINITY);
+    const progressDiff = compareTime(
+      a.lastProgressAt,
+      b.lastProgressAt,
+      Number.POSITIVE_INFINITY,
+    );
     if (progressDiff !== 0) return progressDiff;
 
     return (
-      toTime(a.user.profile?.leaderboardJoinedAt, Number.POSITIVE_INFINITY) -
-      toTime(b.user.profile?.leaderboardJoinedAt, Number.POSITIVE_INFINITY)
+      compareTime(
+        a.profile.leaderboardJoinedAt,
+        b.profile.leaderboardJoinedAt,
+        Number.POSITIVE_INFINITY,
+      )
     );
   });
+}
+
+function toLeaderboardRow(
+  profileRow: LeaderboardProfileRow,
+  trackedStickerCount: number,
+): LeaderboardRow {
+  const stats = profileRow.user.collectionStats[0];
+
+  return {
+    userId: profileRow.userId,
+    trackedHave: stats?.trackedHave ?? 0,
+    trackedMissing: stats?.trackedMissing ?? trackedStickerCount,
+    duplicateCount: stats?.duplicateCount ?? 0,
+    lastProgressAt: stats?.lastProgressAt ?? null,
+    profile: {
+      nickname: profileRow.nickname,
+      cityName: profileRow.cityName,
+      stateCode: profileRow.stateCode,
+      leaderboardJoinedAt: profileRow.leaderboardJoinedAt,
+    },
+  };
 }
 
 function toLeaderboardItem(
@@ -148,13 +193,26 @@ function toLeaderboardItem(
 ): LeaderboardItemDto {
   return {
     rank,
-    nickname: row.user.profile?.nickname ?? "Participante",
-    cityName: row.user.profile?.cityName ?? "",
-    stateCode: row.user.profile?.stateCode ?? "",
+    nickname: row.profile.nickname ?? "Participante",
+    cityName: row.profile.cityName ?? "",
+    stateCode: row.profile.stateCode ?? "",
     trackedHave: row.trackedHave,
     trackedMissing: row.trackedMissing,
     duplicateCount: row.duplicateCount,
   };
+}
+
+function compareTime(
+  a: Date | null | undefined,
+  b: Date | null | undefined,
+  fallback: number,
+) {
+  const aTime = toTime(a, fallback);
+  const bTime = toTime(b, fallback);
+
+  if (aTime === bTime) return 0;
+
+  return aTime - bTime;
 }
 
 function toTime(value: Date | null | undefined, fallback: number) {

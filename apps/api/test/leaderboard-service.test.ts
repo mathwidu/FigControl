@@ -11,6 +11,44 @@ describe("LeaderboardService", () => {
           trackedStickerCount: 994,
         }),
       },
+      userProfile: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            userId: "user-1",
+            nickname: "Alpha",
+            cityName: "Porto Alegre",
+            stateCode: "RS",
+            leaderboardJoinedAt: new Date("2026-05-01T00:00:00.000Z"),
+            user: {
+              collectionStats: [
+                {
+                  trackedHave: 200,
+                  trackedMissing: 794,
+                  duplicateCount: 2,
+                  lastProgressAt: new Date("2026-05-03T00:00:00.000Z"),
+                },
+              ],
+            },
+          },
+          {
+            userId: "user-2",
+            nickname: "Beta",
+            cityName: "Canoas",
+            stateCode: "RS",
+            leaderboardJoinedAt: new Date("2026-05-02T00:00:00.000Z"),
+            user: {
+              collectionStats: [
+                {
+                  trackedHave: 300,
+                  trackedMissing: 694,
+                  duplicateCount: 1,
+                  lastProgressAt: new Date("2026-05-04T00:00:00.000Z"),
+                },
+              ],
+            },
+          },
+        ]),
+      },
       userCollectionStats: {
         findMany: vi.fn().mockResolvedValue([
           {
@@ -82,6 +120,66 @@ describe("LeaderboardService", () => {
       trackedHave: 200,
       trackedMissing: 794,
       duplicateCount: 2,
+      joined: true,
+      eligible: true,
+    });
+  });
+
+  it("includes joined profiles even before collection stats are created", async () => {
+    const joinedAt = new Date("2026-05-10T20:00:00.000Z");
+    const prisma = {
+      collection: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "collection-1",
+          slug: "world-cup-2026",
+          trackedStickerCount: 994,
+        }),
+      },
+      userProfile: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            userId: "user-1",
+            nickname: "mathwidu",
+            cityName: "Igrejinha",
+            stateCode: "RS",
+            leaderboardJoinedAt: joinedAt,
+            user: {
+              collectionStats: [],
+            },
+          },
+        ]),
+      },
+      userCollectionStats: {
+        findMany: vi.fn().mockResolvedValue([]),
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+    };
+    const profiles = {
+      getProfile: vi.fn().mockResolvedValue({
+        leaderboardJoinedAt: joinedAt.toISOString(),
+        leaderboardEligible: true,
+      }),
+    };
+    const service = new LeaderboardService(prisma as never, profiles as never);
+
+    const leaderboard = await service.getLeaderboard("user-1", "world-cup-2026");
+
+    expect(leaderboard.items).toEqual([
+      {
+        rank: 1,
+        nickname: "mathwidu",
+        cityName: "Igrejinha",
+        stateCode: "RS",
+        trackedHave: 0,
+        trackedMissing: 994,
+        duplicateCount: 0,
+      },
+    ]);
+    expect(leaderboard.me).toEqual({
+      rank: 1,
+      trackedHave: 0,
+      trackedMissing: 994,
+      duplicateCount: 0,
       joined: true,
       eligible: true,
     });
