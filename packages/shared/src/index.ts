@@ -109,6 +109,7 @@ export interface UserProfileDto {
   nickname: string | null;
   cityName: string | null;
   stateCode: string | null;
+  phoneNumber: string | null;
   exchangeOptIn: boolean;
   leaderboardJoinedAt: string | null;
   profileCompletedAt: string | null;
@@ -123,9 +124,10 @@ export interface NicknameAvailabilityDto {
 }
 
 export interface UpdateProfileDto {
-  nickname?: string;
-  cityName?: string;
-  stateCode?: string;
+  nickname?: string | null;
+  cityName?: string | null;
+  stateCode?: string | null;
+  phoneNumber?: string | null;
   exchangeOptIn?: boolean;
 }
 

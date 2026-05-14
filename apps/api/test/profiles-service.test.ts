@@ -46,6 +46,7 @@ describe("ProfilesService", () => {
       nickname: null,
       cityName: null,
       stateCode: null,
+      phoneNumber: null,
       exchangeOptIn: false,
       leaderboardEligible: false,
       leaderboardEligibilityReasons: [
@@ -69,6 +70,7 @@ describe("ProfilesService", () => {
       nicknameNormalized: "matheus",
       cityName: "Porto Alegre",
       stateCode: "RS",
+      phoneNumber: "+5551999999999",
       exchangeOptIn: true,
       leaderboardJoinedAt: null,
       profileCompletedAt: new Date("2026-05-01T00:00:00.000Z"),
@@ -78,6 +80,7 @@ describe("ProfilesService", () => {
       nickname: "MÁTHEUS",
       cityName: "Porto Alegre",
       stateCode: "rs",
+      phoneNumber: "(51) 99999-9999",
       exchangeOptIn: true,
     });
 
@@ -87,10 +90,102 @@ describe("ProfilesService", () => {
           nickname: "MÁTHEUS",
           nicknameNormalized: "matheus",
           stateCode: "RS",
+          phoneNumber: "+5551999999999",
         }),
       }),
     );
+    expect(profile.phoneNumber).toBe("+5551999999999");
     expect(profile.leaderboardEligible).toBe(true);
+  });
+
+  it("preserves an existing profile phone when omitted", async () => {
+    const completedAt = new Date("2026-05-01T00:00:00.000Z");
+    const { prisma, service } = createService();
+    prisma.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      emailVerifiedAt: completedAt,
+      profile: {
+        userId: "user-1",
+        nickname: "Matheus",
+        nicknameNormalized: "matheus",
+        cityName: "Porto Alegre",
+        stateCode: "RS",
+        phoneNumber: "+5551999999999",
+        exchangeOptIn: true,
+        leaderboardJoinedAt: null,
+        profileCompletedAt: completedAt,
+      },
+    });
+    prisma.userProfile.findUnique.mockResolvedValue(null);
+    prisma.userProfile.upsert.mockResolvedValue({
+      userId: "user-1",
+      nickname: "Matheus",
+      nicknameNormalized: "matheus",
+      cityName: "Canoas",
+      stateCode: "RS",
+      phoneNumber: "+5551999999999",
+      exchangeOptIn: true,
+      leaderboardJoinedAt: null,
+      profileCompletedAt: completedAt,
+    });
+
+    const profile = await service.updateProfile("user-1", {
+      cityName: "Canoas",
+    });
+
+    expect(prisma.userProfile.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          phoneNumber: "+5551999999999",
+        }),
+      }),
+    );
+    expect(profile.phoneNumber).toBe("+5551999999999");
+  });
+
+  it("clears an existing profile phone when sent as empty", async () => {
+    const completedAt = new Date("2026-05-01T00:00:00.000Z");
+    const { prisma, service } = createService();
+    prisma.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      emailVerifiedAt: completedAt,
+      profile: {
+        userId: "user-1",
+        nickname: "Matheus",
+        nicknameNormalized: "matheus",
+        cityName: "Porto Alegre",
+        stateCode: "RS",
+        phoneNumber: "+5551999999999",
+        exchangeOptIn: true,
+        leaderboardJoinedAt: null,
+        profileCompletedAt: completedAt,
+      },
+    });
+    prisma.userProfile.findUnique.mockResolvedValue(null);
+    prisma.userProfile.upsert.mockResolvedValue({
+      userId: "user-1",
+      nickname: "Matheus",
+      nicknameNormalized: "matheus",
+      cityName: "Porto Alegre",
+      stateCode: "RS",
+      phoneNumber: null,
+      exchangeOptIn: true,
+      leaderboardJoinedAt: null,
+      profileCompletedAt: completedAt,
+    });
+
+    const profile = await service.updateProfile("user-1", {
+      phoneNumber: "",
+    });
+
+    expect(prisma.userProfile.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          phoneNumber: null,
+        }),
+      }),
+    );
+    expect(profile.phoneNumber).toBeNull();
   });
 
   it("rejects a nickname used by another user", async () => {
@@ -122,6 +217,7 @@ describe("ProfilesService", () => {
         nicknameNormalized: "matheus",
         cityName: "Porto Alegre",
         stateCode: "RS",
+        phoneNumber: "+5551999999999",
         exchangeOptIn: true,
         leaderboardJoinedAt: null,
         profileCompletedAt: joinedAt,
@@ -133,6 +229,7 @@ describe("ProfilesService", () => {
       nicknameNormalized: "matheus",
       cityName: "Porto Alegre",
       stateCode: "RS",
+      phoneNumber: "+5551999999999",
       exchangeOptIn: true,
       leaderboardJoinedAt: joinedAt,
       profileCompletedAt: joinedAt,

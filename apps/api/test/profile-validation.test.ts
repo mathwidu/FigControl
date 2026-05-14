@@ -29,13 +29,32 @@ describe("profile validation", () => {
       nickname: "Matheus_WD",
       cityName: "Porto Alegre",
       stateCode: "rs",
+      phoneNumber: "(51) 99999-9999",
     });
 
     expect(result).toEqual({
       valid: true,
       normalizedNickname: "matheus_wd",
       normalizedStateCode: "RS",
+      normalizedPhoneNumber: "+5551999999999",
       errors: [],
     });
+  });
+
+  it("normalizes empty profile phone numbers to null", () => {
+    const result = validateProfileInput({ phoneNumber: "   " });
+
+    expect(result).toMatchObject({
+      valid: true,
+      normalizedPhoneNumber: null,
+      errors: [],
+    });
+  });
+
+  it("rejects invalid Brazilian phone numbers", () => {
+    const result = validateProfileInput({ phoneNumber: "12345" });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain("Informe um telefone brasileiro valido.");
   });
 });

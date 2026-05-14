@@ -24,6 +24,7 @@ import {
   type UserProfileDto,
 } from "@figcontrol/shared";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   type CSSProperties,
   FormEvent,
@@ -83,6 +84,9 @@ const sectionTones = [
 ];
 
 export function AlbumApp() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [auth, setAuth] = useState<AuthTokens | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -110,6 +114,7 @@ export function AlbumApp() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const trackedAppOpenUserRef = useRef<string | null>(null);
   const checkedProfilePromptUserRef = useRef<string | null>(null);
+  const requestedSectionSlug = searchParams.get("section");
 
   useEffect(() => {
     setAuth(loadAuth());
@@ -175,6 +180,29 @@ export function AlbumApp() {
   }, [activeSectionSlug, collection]);
 
   useEffect(() => {
+    if (!collection || !requestedSectionSlug) return;
+
+    const requestedSection = collection.sections.find(
+      (section) => section.slug === requestedSectionSlug,
+    );
+
+    if (!requestedSection || requestedSection.slug === activeSectionSlug) {
+      return;
+    }
+
+    setActiveSectionSlug(requestedSection.slug);
+    setDetailTab(
+      summarizeSectionProgress(requestedSection).missing === 0
+        ? "owned"
+        : "missing",
+    );
+    trackAppEvent(auth, "section_opened", {
+      sectionSlug: requestedSection.slug,
+      sectionName: requestedSection.name,
+    });
+  }, [activeSectionSlug, auth, collection, requestedSectionSlug]);
+
+  useEffect(() => {
     const handleHomeLinkClick = (event: MouseEvent) => {
       const target = event.target;
 
@@ -186,6 +214,7 @@ export function AlbumApp() {
       setActiveSectionSlug(null);
       setDetailTab("missing");
       setPendingStickerCodes(new Set());
+      router.replace(pathname, { scroll: false });
       window.requestAnimationFrame(() => {
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
@@ -196,7 +225,7 @@ export function AlbumApp() {
     return () => {
       document.removeEventListener("click", handleHomeLinkClick);
     };
-  }, []);
+  }, [pathname, router]);
 
   const activeSectionIndex = useMemo(() => {
     if (!collection || !activeSectionSlug) return -1;
@@ -415,10 +444,19 @@ export function AlbumApp() {
     setDetailTab(
       summarizeSectionProgress(section).missing === 0 ? "owned" : "missing",
     );
+    router.replace(`${pathname}?section=${encodeURIComponent(section.slug)}`, {
+      scroll: false,
+    });
     trackAppEvent(auth, "section_opened", {
       sectionSlug: section.slug,
       sectionName: section.name,
     });
+  }
+
+  function closeSection() {
+    setActiveSectionSlug(null);
+    setDetailTab("missing");
+    router.replace(pathname, { scroll: false });
   }
 
   function openAdjacentSection(direction: -1 | 1) {
@@ -738,7 +776,7 @@ export function AlbumApp() {
               section={activeSection}
               activeTab={detailTab}
               pendingStickerCodes={pendingStickerCodes}
-              onBack={() => setActiveSectionSlug(null)}
+              onBack={closeSection}
               onPrevious={() => openAdjacentSection(-1)}
               onNext={() => openAdjacentSection(1)}
               onTabChange={setDetailTab}
@@ -1077,12 +1115,13 @@ function SectionDetail({
     >
       <div className="detail-toolbar">
         <button
-          className="icon-button translucent"
+          className="detail-back-button"
           type="button"
           onClick={onBack}
           title="Voltar"
         >
           <ArrowLeft size={20} />
+          <span>Voltar</span>
         </button>
         <div className="detail-title">
           <button

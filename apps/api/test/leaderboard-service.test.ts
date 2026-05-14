@@ -63,6 +63,7 @@ describe("LeaderboardService", () => {
                 nickname: "Alpha",
                 cityName: "Porto Alegre",
                 stateCode: "RS",
+                phoneNumber: "+5551999999999",
                 leaderboardJoinedAt: new Date("2026-05-01T00:00:00.000Z"),
               },
             },
@@ -79,6 +80,7 @@ describe("LeaderboardService", () => {
                 nickname: "Beta",
                 cityName: "Canoas",
                 stateCode: "RS",
+                phoneNumber: "+5551988888888",
                 leaderboardJoinedAt: new Date("2026-05-02T00:00:00.000Z"),
               },
             },
@@ -106,7 +108,10 @@ describe("LeaderboardService", () => {
       collectionStats as never,
     );
 
-    const leaderboard = await service.getLeaderboard("user-1", "world-cup-2026");
+    const leaderboard = await service.getLeaderboard(
+      "user-1",
+      "world-cup-2026",
+    );
 
     expect(leaderboard.items.map((item) => item.nickname)).toEqual([
       "Beta",
@@ -122,6 +127,8 @@ describe("LeaderboardService", () => {
       duplicateCount: 1,
     });
     expect(JSON.stringify(leaderboard)).not.toContain("hidden@example.com");
+    expect(JSON.stringify(leaderboard)).not.toContain("+5551999999999");
+    expect(JSON.stringify(leaderboard)).not.toContain("+5551988888888");
     expect(leaderboard.me).toEqual({
       rank: 2,
       trackedHave: 200,
@@ -187,7 +194,10 @@ describe("LeaderboardService", () => {
       collectionStats as never,
     );
 
-    const leaderboard = await service.getLeaderboard("user-1", "world-cup-2026");
+    const leaderboard = await service.getLeaderboard(
+      "user-1",
+      "world-cup-2026",
+    );
 
     expect(collectionStats.ensureUserStats).toHaveBeenCalledWith(
       "user-1",

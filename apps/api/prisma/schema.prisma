@@ -71,13 +71,13 @@ model RefreshToken {
 }
 
 model Collection {
-  id                  String           @id @default(uuid())
-  slug                String           @unique
+  id                  String                @id @default(uuid())
+  slug                String                @unique
   name                String
-  baseStickerCount    Int              @map("base_sticker_count")
-  trackedStickerCount Int              @map("tracked_sticker_count")
-  createdAt           DateTime         @default(now()) @map("created_at")
-  updatedAt           DateTime         @updatedAt @map("updated_at")
+  baseStickerCount    Int                   @map("base_sticker_count")
+  trackedStickerCount Int                   @map("tracked_sticker_count")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
   sections            StickerSection[]
   userStats           UserCollectionStats[]
 
@@ -128,17 +128,18 @@ model UserStickerQuantity {
 }
 
 model UserProfile {
-  userId                String    @id @map("user_id")
-  nickname              String?
-  nicknameNormalized    String?   @unique @map("nickname_normalized")
-  cityName              String?   @map("city_name")
-  stateCode             String?   @map("state_code")
-  exchangeOptIn         Boolean   @default(false) @map("exchange_opt_in")
-  leaderboardJoinedAt   DateTime? @map("leaderboard_joined_at")
-  profileCompletedAt    DateTime? @map("profile_completed_at")
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String    @id @map("user_id")
+  nickname            String?
+  nicknameNormalized  String?   @unique @map("nickname_normalized")
+  cityName            String?   @map("city_name")
+  stateCode           String?   @map("state_code")
+  phoneNumber         String?   @map("phone_number")
+  exchangeOptIn       Boolean   @default(false) @map("exchange_opt_in")
+  leaderboardJoinedAt DateTime? @map("leaderboard_joined_at")
+  profileCompletedAt  DateTime? @map("profile_completed_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([leaderboardJoinedAt])
   @@index([stateCode, cityName])

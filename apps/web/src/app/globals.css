@@ -793,9 +793,23 @@ a {
 
 .detail-toolbar {
   display: grid;
-  grid-template-columns: 42px 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 10px;
+}
+
+.detail-back-button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: #eef7f0;
+  color: var(--green-dark);
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 950;
 }
 
 .detail-title {
@@ -1645,6 +1659,74 @@ a {
   align-items: start;
 }
 
+.profile-stats-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.profile-progress-card {
+  min-width: 0;
+  border-radius: 18px;
+  padding: clamp(18px, 3vw, 28px);
+  background:
+    linear-gradient(135deg, rgba(255, 223, 0, 0.22), transparent 44%),
+    linear-gradient(145deg, #047a43, #163762 92%);
+  color: #ffffff;
+  box-shadow: 0 22px 64px rgba(22, 55, 98, 0.16);
+}
+
+.profile-progress-card h2 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 3.35rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
+.profile-progress-card p:not(.eyebrow) {
+  max-width: 560px;
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 820;
+}
+
+.profile-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-stat-card {
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 16px;
+  display: grid;
+  align-content: space-between;
+  gap: 10px;
+  box-shadow: 0 14px 42px rgba(15, 23, 42, 0.07);
+}
+
+.profile-stat-card svg {
+  color: var(--green-dark);
+}
+
+.profile-stat-card span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.profile-stat-card strong {
+  color: var(--ink);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  line-height: 1;
+  font-weight: 950;
+}
+
 .profile-card {
   min-width: 0;
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -1722,6 +1804,152 @@ a {
   gap: 7px;
   color: var(--green-dark);
   font-weight: 900;
+}
+
+.profile-achievements,
+.profile-insight-column {
+  display: grid;
+  gap: 14px;
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.achievement-card {
+  min-width: 0;
+  border: 1px solid #dbe7de;
+  border-radius: 14px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  background: #fbfdfa;
+}
+
+.achievement-card.unlocked {
+  border-color: rgba(6, 168, 79, 0.34);
+  background: #ecfff3;
+}
+
+.achievement-card.locked {
+  color: #64748b;
+}
+
+.achievement-card svg {
+  color: var(--green-dark);
+  margin-top: 2px;
+}
+
+.achievement-card.locked svg {
+  color: #94a3b8;
+}
+
+.achievement-card strong {
+  display: block;
+  color: var(--ink);
+  font-weight: 950;
+}
+
+.achievement-card p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.achievement-card > span {
+  border-radius: 999px;
+  background: #eef6ef;
+  color: var(--green-dark);
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.profile-section-insights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.profile-insight-list {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-insight-row {
+  min-width: 0;
+  border: 1px solid #dbe7de;
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(96px, auto) auto;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+  background: #fbfdfa;
+  transition:
+    border-color 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.profile-insight-row:hover {
+  border-color: rgba(6, 168, 79, 0.38);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+}
+
+.profile-insight-row strong,
+.profile-insight-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-insight-row strong {
+  display: block;
+  font-weight: 950;
+}
+
+.profile-insight-row span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.profile-insight-meta {
+  min-width: 96px;
+  display: grid;
+  gap: 7px;
+}
+
+.profile-insight-progress {
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e5efe7;
+}
+
+.profile-insight-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+}
+
+.profile-insight-empty {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 780;
+  line-height: 1.45;
 }
 
 .profile-prompt-backdrop {
@@ -2123,6 +2351,8 @@ a {
   }
 
   .profile-layout,
+  .profile-stats-panel,
+  .profile-section-insights,
   .leaderboard-me {
     grid-template-columns: 1fr;
   }
@@ -2188,8 +2418,31 @@ a {
   }
 
   .profile-prompt-panel,
-  .profile-card {
+  .profile-card,
+  .profile-stat-card {
     padding: 14px;
+  }
+
+  .profile-stat-grid,
+  .achievement-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .achievement-card {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .achievement-card > span {
+    grid-column: 2;
+    width: fit-content;
+  }
+
+  .profile-insight-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .profile-insight-row > svg {
+    display: none;
   }
 
   .leaderboard-me-stats {

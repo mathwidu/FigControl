@@ -1,4 +1,7 @@
-import type { LeaderboardEligibilityReason, UserProfileDto } from "@figcontrol/shared";
+import type {
+  LeaderboardEligibilityReason,
+  UserProfileDto,
+} from "@figcontrol/shared";
 
 export interface BrazilianState {
   code: string;
@@ -42,6 +45,21 @@ export function getStateName(code: string | null | undefined): string {
     BRAZILIAN_STATES.find((state) => state.code === normalizedCode)?.name ??
     normalizedCode
   );
+}
+
+export function toProfilePhoneInput(phoneNumber: string | null): string {
+  return phoneNumber?.replace(/^\+55/, "") ?? "";
+}
+
+export function formatProfilePhone(phoneNumber: string | null): string {
+  const digits = toProfilePhoneInput(phoneNumber);
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return phoneNumber ?? "";
 }
 
 export function isProfileReadyForLeaderboard(profile: UserProfileDto): boolean {

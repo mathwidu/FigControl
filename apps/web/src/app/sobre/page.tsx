@@ -23,14 +23,19 @@ export default function AboutPage() {
       <h2>Fase 2</h2>
       <p>
         A primeira versão nasceu como um controle individual de coleção. A fase
-        2 evolui essa ideia com perfil, apelido, cidade e ranking por progresso
-        total, criando a base para uma futura experiência de troca entre pessoas
-        que tenham figurinhas complementares.
+        2 evolui essa ideia para um painel pessoal de álbum, com perfil,
+        progresso por seções, repetidas, coleções quase completas e sinais
+        claros do que ainda merece atenção. O ranking continua sendo uma camada
+        social, mas a experiência principal é ajudar cada colecionador a
+        entender melhor o próprio álbum.
       </p>
       <p>
-        A busca por parceiros de troca ainda não está ativa. Antes disso, o
-        projeto prioriza validar o ranking, melhorar a experiência do perfil e
-        manter a privacidade dos colecionadores clara desde o início.
+        As conquistas entram como uma gamificação leve: pequenos marcos para
+        celebrar progresso real, sem transformar o app em uma disputa
+        obrigatória. A busca por parceiros de troca ainda não está ativa, mas o
+        perfil já prepara a base para combinações futuras entre pessoas com
+        figurinhas complementares, sempre mantendo dados privados, como
+        telefone, fora do ranking e da exibição pública.
       </p>
       <h2>Responsável pelo projeto</h2>
       <p>

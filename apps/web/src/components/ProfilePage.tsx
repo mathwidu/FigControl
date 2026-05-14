@@ -16,29 +16,39 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import {
   checkNicknameAvailability,
+  getCollection,
   getProfile,
   joinLeaderboard,
   refresh,
   updateProfile,
   type AuthTokens,
 } from "../lib/api";
+import type { WebCollection } from "../lib/collection";
+import { deriveProfileInsights } from "../lib/profile-insights";
 import {
   BRAZILIAN_STATES,
+  formatProfilePhone,
   getProfileEligibilityMessage,
   getStateName,
   isProfileReadyForLeaderboard,
+  toProfilePhoneInput,
 } from "../lib/profile";
 import { loadAuth, saveAuth } from "../lib/storage";
+import { ProfileAchievementsPanel } from "./ProfileAchievementsPanel";
+import { ProfileSectionInsights } from "./ProfileSectionInsights";
+import { ProfileStatsPanel } from "./ProfileStatsPanel";
 
 type LoadState = "loading" | "ready" | "blocked" | "error";
 
 export function ProfilePage() {
   const [auth, setAuth] = useState<AuthTokens | null>(null);
   const [profile, setProfile] = useState<UserProfileDto | null>(null);
+  const [collection, setCollection] = useState<WebCollection | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [nickname, setNickname] = useState("");
   const [cityName, setCityName] = useState("");
   const [stateCode, setStateCode] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [exchangeOptIn, setExchangeOptIn] = useState(false);
   const [availability, setAvailability] =
     useState<NicknameAvailabilityDto | null>(null);
@@ -46,6 +56,9 @@ export function ProfilePage() {
   const [submitting, setSubmitting] = useState(false);
   const [joining, setJoining] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [collectionMessage, setCollectionMessage] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     void loadProfile();
@@ -85,6 +98,7 @@ export function ProfilePage() {
 
   async function loadProfile() {
     setMessage(null);
+    setCollectionMessage(null);
     setState("loading");
     const storedAuth = loadAuth();
     setAuth(storedAuth);
@@ -104,6 +118,7 @@ export function ProfilePage() {
     try {
       const loadedProfile = await getProfile(tokens.accessToken);
       applyProfile(loadedProfile);
+      await loadProfileCollection(tokens.accessToken);
       setState("ready");
       return true;
     } catch (error) {
@@ -113,6 +128,7 @@ export function ProfilePage() {
         setAuth(refreshed);
         const loadedProfile = await getProfile(refreshed.accessToken);
         applyProfile(loadedProfile);
+        await loadProfileCollection(refreshed.accessToken);
         setState("ready");
         return true;
       } catch {
@@ -124,11 +140,25 @@ export function ProfilePage() {
     }
   }
 
+  async function loadProfileCollection(accessToken: string) {
+    try {
+      const loadedCollection = await getCollection(accessToken);
+      setCollection(loadedCollection);
+      setCollectionMessage(null);
+    } catch {
+      setCollection(null);
+      setCollectionMessage(
+        "Não foi possível carregar as estatísticas do álbum agora.",
+      );
+    }
+  }
+
   function applyProfile(nextProfile: UserProfileDto) {
     setProfile(nextProfile);
     setNickname(nextProfile.nickname ?? "");
     setCityName(nextProfile.cityName ?? "");
     setStateCode(nextProfile.stateCode ?? "");
+    setPhoneNumber(toProfilePhoneInput(nextProfile.phoneNumber));
     setExchangeOptIn(nextProfile.exchangeOptIn);
   }
 
@@ -144,6 +174,7 @@ export function ProfilePage() {
         nickname,
         cityName,
         stateCode,
+        phoneNumber: phoneNumber.trim() ? phoneNumber : null,
         exchangeOptIn,
       });
       applyProfile(nextProfile);
@@ -203,7 +234,11 @@ export function ProfilePage() {
         <p className="eyebrow">Perfil</p>
         <h1 id="profile-error-title">Não foi possível carregar</h1>
         <p>{message ?? "Tente atualizar novamente."}</p>
-        <button className="text-button primary" type="button" onClick={loadProfile}>
+        <button
+          className="text-button primary"
+          type="button"
+          onClick={loadProfile}
+        >
           <RefreshCcw size={17} />
           Atualizar
         </button>
@@ -218,7 +253,9 @@ export function ProfilePage() {
     cityName.trim().length >= 2 &&
     stateCode.length === 2 &&
     !submitting;
-  const canJoin = isProfileReadyForLeaderboard(profile) && !profile.leaderboardJoinedAt;
+  const canJoin =
+    isProfileReadyForLeaderboard(profile) && !profile.leaderboardJoinedAt;
+  const insights = collection ? deriveProfileInsights(collection) : null;
 
   return (
     <section className="profile-page" aria-labelledby="profile-title">
@@ -227,18 +264,23 @@ export function ProfilePage() {
           <p className="eyebrow">Perfil</p>
           <h1 id="profile-title">Seu nome na corrida</h1>
           <p>
-            O ranking mostra quem está mais perto de completar as 994 figurinhas
-            acompanhadas no FigControl.
+            Acompanhe seu progresso, veja onde agir agora e prepare seu perfil
+            para futuras trocas com outros colecionadores.
           </p>
         </div>
         <UserRound size={42} />
       </div>
 
+      {insights ? <ProfileStatsPanel insights={insights} /> : null}
+      {collectionMessage ? (
+        <div className="notice">{collectionMessage}</div>
+      ) : null}
+
       <div className="profile-layout">
         <form className="profile-card form-grid" onSubmit={saveProfile}>
           <div className="profile-card-heading">
             <UserRound size={20} />
-            <h2>Dados públicos</h2>
+            <h2>Dados do perfil</h2>
           </div>
           {message ? (
             <div className={`notice ${message.includes("Não") ? "error" : ""}`}>
@@ -287,6 +329,23 @@ export function ProfilePage() {
               </select>
             </label>
           </div>
+          <label className="field">
+            <span>Celular privado</span>
+            <input
+              value={phoneNumber}
+              onChange={(event) => setPhoneNumber(event.target.value)}
+              maxLength={32}
+              autoComplete="tel-national"
+              inputMode="tel"
+              placeholder="Ex.: 51999999999"
+            />
+            <small className="field-hint">
+              Usaremos isso apenas em futuras trocas. Não aparece no ranking.
+              {profile.phoneNumber ? (
+                <> Salvo como {formatProfilePhone(profile.phoneNumber)}.</>
+              ) : null}
+            </small>
+          </label>
           <label className="profile-checkbox">
             <input
               checked={exchangeOptIn}
@@ -297,7 +356,11 @@ export function ProfilePage() {
               Quero aparecer futuramente para possíveis trocas de figurinhas.
             </span>
           </label>
-          <button className="text-button primary" type="submit" disabled={!canSave}>
+          <button
+            className="text-button primary"
+            type="submit"
+            disabled={!canSave}
+          >
             <CheckCircle2 size={17} />
             {submitting ? "Salvando..." : "Salvar perfil"}
           </button>
@@ -342,6 +405,12 @@ export function ProfilePage() {
           </small>
         </aside>
       </div>
+      {insights ? (
+        <>
+          <ProfileAchievementsPanel achievements={insights.achievements} />
+          <ProfileSectionInsights insights={insights} />
+        </>
+      ) : null}
     </section>
   );
 }
@@ -369,7 +438,7 @@ function AvailabilityText({
     <small className={`field-hint ${availability.available ? "ok" : "error"}`}>
       {availability.available
         ? "Apelido disponível."
-        : availability.reason ?? "Apelido indisponível."}
+        : (availability.reason ?? "Apelido indisponível.")}
     </small>
   );
 }

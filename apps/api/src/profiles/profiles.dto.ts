@@ -4,20 +4,24 @@ export class UpdateProfileRequestDto {
   @IsOptional()
   @IsString()
   @MaxLength(24)
-  nickname?: string;
+  nickname?: string | null;
 
   @IsOptional()
   @IsString()
   @MaxLength(80)
-  cityName?: string;
+  cityName?: string | null;
 
   @IsOptional()
   @IsString()
   @MaxLength(2)
-  stateCode?: string;
+  stateCode?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  phoneNumber?: string | null;
 
   @IsOptional()
   @IsBoolean()
   exchangeOptIn?: boolean;
 }
-

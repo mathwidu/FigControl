@@ -14,10 +14,7 @@ import type {
 import { AnalyticsService } from "../analytics/analytics.service";
 import { CollectionStatsService } from "../leaderboard/collection-stats.service";
 import { PrismaService } from "../prisma/prisma.service";
-import {
-  normalizeNickname,
-  validateProfileInput,
-} from "./profile-validation";
+import { normalizeNickname, validateProfileInput } from "./profile-validation";
 
 const WORLD_CUP_2026_COLLECTION_SLUG = "world-cup-2026";
 
@@ -27,6 +24,7 @@ type ProfileRecord = {
   nicknameNormalized: string | null;
   cityName: string | null;
   stateCode: string | null;
+  phoneNumber: string | null;
   exchangeOptIn: boolean;
   leaderboardJoinedAt: Date | null;
   profileCompletedAt: Date | null;
@@ -89,19 +87,25 @@ export class ProfilesService {
     }
 
     const nextNickname =
-      input.nickname === undefined ? user.profile?.nickname ?? null : nullableTrim(input.nickname);
+      input.nickname === undefined
+        ? (user.profile?.nickname ?? null)
+        : nullableTrim(input.nickname);
     const nextNormalizedNickname =
       input.nickname === undefined
-        ? user.profile?.nicknameNormalized ?? null
+        ? (user.profile?.nicknameNormalized ?? null)
         : validation.normalizedNickname;
     const nextCityName =
       input.cityName === undefined
-        ? user.profile?.cityName ?? null
+        ? (user.profile?.cityName ?? null)
         : nullableTrim(input.cityName);
     const nextStateCode =
       input.stateCode === undefined
-        ? user.profile?.stateCode ?? null
+        ? (user.profile?.stateCode ?? null)
         : validation.normalizedStateCode;
+    const nextPhoneNumber =
+      input.phoneNumber === undefined
+        ? (user.profile?.phoneNumber ?? null)
+        : validation.normalizedPhoneNumber;
     const nextExchangeOptIn =
       input.exchangeOptIn ?? user.profile?.exchangeOptIn ?? false;
 
@@ -126,6 +130,7 @@ export class ProfilesService {
         nicknameNormalized: nextNormalizedNickname,
         cityName: nextCityName,
         stateCode: nextStateCode,
+        phoneNumber: nextPhoneNumber,
         exchangeOptIn: nextExchangeOptIn,
         profileCompletedAt,
       },
@@ -135,6 +140,7 @@ export class ProfilesService {
         nicknameNormalized: nextNormalizedNickname,
         cityName: nextCityName,
         stateCode: nextStateCode,
+        phoneNumber: nextPhoneNumber,
         exchangeOptIn: nextExchangeOptIn,
         profileCompletedAt,
       },
@@ -153,7 +159,9 @@ export class ProfilesService {
     const profile = toProfileDto(user);
 
     if (!profile.leaderboardEligible) {
-      throw new ForbiddenException("Complete seu perfil para entrar no ranking.");
+      throw new ForbiddenException(
+        "Complete seu perfil para entrar no ranking.",
+      );
     }
 
     if (user.profile?.leaderboardJoinedAt) {
@@ -191,6 +199,7 @@ export class ProfilesService {
             nicknameNormalized: true,
             cityName: true,
             stateCode: true,
+            phoneNumber: true,
             exchangeOptIn: true,
             leaderboardJoinedAt: true,
             profileCompletedAt: true,
@@ -228,6 +237,7 @@ function toProfileDto(user: UserWithProfile): UserProfileDto {
     nickname: user.profile?.nickname ?? null,
     cityName: user.profile?.cityName ?? null,
     stateCode: user.profile?.stateCode ?? null,
+    phoneNumber: user.profile?.phoneNumber ?? null,
     exchangeOptIn: user.profile?.exchangeOptIn ?? false,
     leaderboardJoinedAt:
       user.profile?.leaderboardJoinedAt?.toISOString() ?? null,

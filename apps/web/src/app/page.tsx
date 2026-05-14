@@ -1,5 +1,10 @@
-import { AlbumApp } from '../components/AlbumApp';
+import { Suspense } from "react";
+import { AlbumApp } from "../components/AlbumApp";
 
 export default function HomePage() {
-  return <AlbumApp />;
+  return (
+    <Suspense fallback={<div className="notice">Carregando álbum...</div>}>
+      <AlbumApp />
+    </Suspense>
+  );
 }

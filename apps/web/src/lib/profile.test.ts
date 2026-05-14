@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   BRAZILIAN_STATES,
+  formatProfilePhone,
   getProfileEligibilityMessage,
   getStateName,
   isProfileReadyForLeaderboard,
+  toProfilePhoneInput,
 } from "./profile";
 
 describe("profile helpers", () => {
@@ -19,6 +21,7 @@ describe("profile helpers", () => {
         nickname: "Matheus",
         cityName: "Porto Alegre",
         stateCode: "RS",
+        phoneNumber: null,
         exchangeOptIn: true,
         leaderboardJoinedAt: null,
         profileCompletedAt: new Date().toISOString(),
@@ -34,6 +37,7 @@ describe("profile helpers", () => {
         nickname: null,
         cityName: "",
         stateCode: null,
+        phoneNumber: null,
         exchangeOptIn: false,
         leaderboardJoinedAt: null,
         profileCompletedAt: null,
@@ -41,5 +45,12 @@ describe("profile helpers", () => {
         leaderboardEligibilityReasons: ["NICKNAME_REQUIRED", "CITY_REQUIRED"],
       }),
     ).toBe("Escolha um apelido e informe sua cidade para entrar no ranking.");
+  });
+
+  it("formats private phone numbers for the profile form", () => {
+    expect(formatProfilePhone("+5551999999999")).toBe("(51) 99999-9999");
+    expect(formatProfilePhone("+555133334444")).toBe("(51) 3333-4444");
+    expect(toProfilePhoneInput("+5551999999999")).toBe("51999999999");
+    expect(toProfilePhoneInput(null)).toBe("");
   });
 });

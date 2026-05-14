@@ -17,10 +17,18 @@ export default function PrivacyPage() {
         e proteger o serviço contra abuso.
       </p>
       <p>
-        Se você completar o perfil, armazenaremos também apelido, cidade, estado,
-        participação no ranking e preferência de aparecer em futuras
-        funcionalidades de troca. No ranking, exibimos apenas apelido, cidade,
-        estado e progresso total da coleção; seu e-mail não é exibido.
+        Se você completar o perfil, armazenaremos também apelido, cidade,
+        estado, telefone, participação no ranking e preferência de aparecer em
+        futuras funcionalidades de troca. O telefone é privado: ele não aparece
+        no ranking, não é exibido publicamente e fica salvo apenas para preparar
+        recursos futuros de troca entre colecionadores. Você pode limpar esse
+        dado a qualquer momento pela tela de perfil.
+      </p>
+      <p>
+        No ranking, exibimos apenas apelido, cidade, estado e progresso total da
+        coleção; seu e-mail e seu telefone não são exibidos. As funcionalidades
+        de troca ainda não estão ativas. Informar telefone ou marcar interesse
+        em trocas não garante contatos, combinações ou parceiros de troca.
       </p>
       <p>
         A participação no ranking é opcional. Depois de entrar, a opção de saída

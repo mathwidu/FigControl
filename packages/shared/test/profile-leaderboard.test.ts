@@ -12,6 +12,7 @@ describe("profile and leaderboard contracts", () => {
       nickname: null,
       cityName: null,
       stateCode: null,
+      phoneNumber: null,
       exchangeOptIn: false,
       leaderboardJoinedAt: null,
       profileCompletedAt: null,
@@ -40,6 +41,7 @@ describe("profile and leaderboard contracts", () => {
       nickname: "Matheus",
       cityName: "Porto Alegre",
       stateCode: "RS",
+      phoneNumber: "+5551999999999",
       exchangeOptIn: true,
     } satisfies UpdateProfileDto;
     const leaderboard = {

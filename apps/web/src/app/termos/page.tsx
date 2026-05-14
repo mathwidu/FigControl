@@ -4,8 +4,8 @@ export default function TermsPage() {
       <h1>Termos de uso</h1>
       <p>
         O FigControl é uma ferramenta independente, criada para ajudar
-        colecionadores a controlar o próprio álbum de figurinhas da Copa 2026.
-        O uso do app é pessoal e não comercial.
+        colecionadores a controlar o próprio álbum de figurinhas da Copa 2026. O
+        uso do app é pessoal e não comercial.
       </p>
       <p>
         O projeto não é oficial e não possui vínculo, patrocínio, autorização ou
@@ -34,8 +34,17 @@ export default function TermsPage() {
       </p>
       <p>
         A preferência de aparecer em futuras funcionalidades de troca indica
-        apenas interesse do usuário. O FigControl não intermedeia pagamentos,
-        vendas, entregas ou acordos entre colecionadores.
+        apenas interesse do usuário. As funcionalidades de troca ainda não estão
+        ativas, e informar telefone ou ativar essa preferência não garante
+        contatos, combinações, disponibilidade de figurinhas ou parceiros de
+        troca.
+      </p>
+      <p>
+        O telefone informado no perfil é privado, não aparece no ranking e não é
+        exibido publicamente. Ele pode ser usado no futuro apenas para preparar
+        experiências de troca entre colecionadores e pode ser removido pelo
+        próprio usuário na tela de perfil. O FigControl não intermedeia
+        pagamentos, vendas, entregas ou acordos entre colecionadores.
       </p>
       <p>
         O FigControl pode ficar temporariamente indisponível por manutenção,
@@ -50,7 +59,11 @@ export default function TermsPage() {
       <ul>
         <li>
           GitHub:{" "}
-          <a href="https://github.com/mathwidu" rel="noreferrer" target="_blank">
+          <a
+            href="https://github.com/mathwidu"
+            rel="noreferrer"
+            target="_blank"
+          >
             github.com/mathwidu
           </a>
         </li>
