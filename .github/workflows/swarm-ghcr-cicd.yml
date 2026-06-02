@@ -202,6 +202,40 @@ jobs:
           echo "api_service=${API_SERVICE}" >> "$GITHUB_OUTPUT"
           echo "web_service=${WEB_SERVICE}" >> "$GITHUB_OUTPUT"
 
+      - name: Check SSH TCP connectivity
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT || 22 }}
+        run: |
+          set -euo pipefail
+
+          python3 <<'PY'
+          import os
+          import socket
+          import sys
+          import time
+
+          host = os.environ["VPS_HOST"]
+          port = int(os.environ.get("VPS_PORT") or "22")
+          deadline = time.time() + 120
+          attempt = 1
+          last_error = None
+
+          while time.time() < deadline:
+              try:
+                  with socket.create_connection((host, port), timeout=10):
+                      print(f"ssh_tcp_connect=ok attempt={attempt}")
+                      sys.exit(0)
+              except OSError as exc:
+                  last_error = exc
+                  print(f"ssh_tcp_connect=retry attempt={attempt} error={type(exc).__name__}")
+                  attempt += 1
+                  time.sleep(10)
+
+          print(f"ssh_tcp_connect=failed error={type(last_error).__name__ if last_error else 'unknown'}")
+          sys.exit(1)
+          PY
+
       - name: Deploy to Docker Swarm on VPS
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -218,6 +252,7 @@ jobs:
           port: ${{ secrets.VPS_PORT || 22 }}
           envs: GHCR_USER,GHCR_TOKEN,API_IMAGE,WEB_IMAGE,API_SERVICE,WEB_SERVICE
           script_stop: true
+          timeout: 120s
           command_timeout: 30m
           script: |
             set -euo pipefail
