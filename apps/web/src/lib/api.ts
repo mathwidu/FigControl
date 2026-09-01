@@ -25,6 +25,48 @@ export interface AuthEmailResponse {
   message: string;
 }
 
+export type RefreshTokens = (refreshToken: string) => Promise<AuthTokens>;
+
+const inFlightRefreshes = new Map<string, Promise<AuthTokens>>();
+
+export async function runWithFreshAccessToken<T>(
+  tokens: AuthTokens,
+  requestWithAccessToken: (accessToken: string) => Promise<T>,
+  onRefresh: (tokens: AuthTokens) => void,
+  refreshTokens: RefreshTokens = refresh,
+): Promise<T> {
+  try {
+    return await requestWithAccessToken(tokens.accessToken);
+  } catch (error) {
+    if (!isAccessTokenError(error)) {
+      throw error;
+    }
+
+    const refreshed = await refreshOnce(tokens.refreshToken, refreshTokens);
+    onRefresh(refreshed);
+    return requestWithAccessToken(refreshed.accessToken);
+  }
+}
+
+export function isAccessTokenError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return /invalid bearer token|missing bearer token/i.test(error.message);
+}
+
+function refreshOnce(
+  refreshToken: string,
+  refreshTokens: RefreshTokens,
+): Promise<AuthTokens> {
+  const existing = inFlightRefreshes.get(refreshToken);
+  if (existing) return existing;
+
+  const nextRefresh = refreshTokens(refreshToken).finally(() => {
+    inFlightRefreshes.delete(refreshToken);
+  });
+  inFlightRefreshes.set(refreshToken, nextRefresh);
+  return nextRefresh;
+}
+
 export async function register(
   email: string,
   password: string,

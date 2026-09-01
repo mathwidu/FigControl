@@ -20,6 +20,7 @@ import {
   getProfile,
   joinLeaderboard,
   refresh,
+  runWithFreshAccessToken,
   updateProfile,
   type AuthTokens,
 } from "../lib/api";
@@ -81,7 +82,12 @@ export function ProfilePage() {
 
     setCheckingNickname(true);
     const timeout = window.setTimeout(() => {
-      void checkNicknameAvailability(auth.accessToken, trimmedNickname)
+      void runWithFreshAccessToken(
+        auth,
+        (accessToken) =>
+          checkNicknameAvailability(accessToken, trimmedNickname),
+        handleTokenRefresh,
+      )
         .then(setAvailability)
         .catch(() =>
           setAvailability({
@@ -162,6 +168,11 @@ export function ProfilePage() {
     setExchangeOptIn(nextProfile.exchangeOptIn);
   }
 
+  function handleTokenRefresh(refreshed: AuthTokens) {
+    saveAuth(refreshed);
+    setAuth(refreshed);
+  }
+
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!auth) return;
@@ -170,13 +181,18 @@ export function ProfilePage() {
     setMessage(null);
 
     try {
-      const nextProfile = await updateProfile(auth.accessToken, {
-        nickname,
-        cityName,
-        stateCode,
-        phoneNumber: phoneNumber.trim() ? phoneNumber : null,
-        exchangeOptIn,
-      });
+      const nextProfile = await runWithFreshAccessToken(
+        auth,
+        (accessToken) =>
+          updateProfile(accessToken, {
+            nickname,
+            cityName,
+            stateCode,
+            phoneNumber: phoneNumber.trim() ? phoneNumber : null,
+            exchangeOptIn,
+          }),
+        handleTokenRefresh,
+      );
       applyProfile(nextProfile);
       setMessage("Perfil salvo.");
     } catch (error) {
@@ -195,7 +211,11 @@ export function ProfilePage() {
     setMessage(null);
 
     try {
-      const nextProfile = await joinLeaderboard(auth.accessToken);
+      const nextProfile = await runWithFreshAccessToken(
+        auth,
+        joinLeaderboard,
+        handleTokenRefresh,
+      );
       applyProfile(nextProfile);
       setMessage("Você entrou no ranking.");
     } catch (error) {

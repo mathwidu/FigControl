@@ -39,10 +39,10 @@ import {
   getCollection,
   getProfile,
   login,
-  refresh,
   register,
   requestEmailVerification,
   requestPasswordReset,
+  runWithFreshAccessToken,
   setStickerQuantity,
   trackAnalyticsEvent,
   type AuthTokens,
@@ -324,30 +324,29 @@ export function AlbumApp() {
   async function loadRemoteCollection(tokens: AuthTokens) {
     setError(null);
     try {
-      const remote = await getCollection(tokens.accessToken);
+      const remote = await runWithFreshAccessToken(
+        tokens,
+        getCollection,
+        handleTokenRefresh,
+      );
       saveCollection(remote);
       setCollection(remote);
     } catch (requestError) {
-      try {
-        const refreshed = await refresh(tokens.refreshToken);
-        saveAuth(refreshed);
-        setAuth(refreshed);
-        const remote = await getCollection(refreshed.accessToken);
-        saveCollection(remote);
-        setCollection(remote);
-      } catch {
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Falha ao carregar colecao.",
-        );
-      }
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Falha ao carregar colecao.",
+      );
     }
   }
 
   async function maybeOpenProfilePrompt(tokens: AuthTokens) {
     try {
-      const nextProfile = await getProfile(tokens.accessToken);
+      const nextProfile = await runWithFreshAccessToken(
+        tokens,
+        getProfile,
+        handleTokenRefresh,
+      );
       setProfile(nextProfile);
       setProfileLoaded(true);
       const skippedKey = profilePromptSkipKey(tokens.user.id);
@@ -365,6 +364,11 @@ export function AlbumApp() {
     }
   }
 
+  function handleTokenRefresh(refreshed: AuthTokens) {
+    saveAuth(refreshed);
+    setAuth(refreshed);
+  }
+
   async function changeQuantity(
     sticker: WebSticker,
     nextQuantity: number,
@@ -379,10 +383,15 @@ export function AlbumApp() {
     setError(null);
 
     try {
-      const updated = await setStickerQuantity(
-        auth.accessToken,
-        sticker.code,
-        Math.max(0, nextQuantity),
+      const updated = await runWithFreshAccessToken(
+        auth,
+        (accessToken) =>
+          setStickerQuantity(
+            accessToken,
+            sticker.code,
+            Math.max(0, nextQuantity),
+          ),
+        handleTokenRefresh,
       );
       saveCollection(updated);
       setCollection(updated);
@@ -793,7 +802,8 @@ export function AlbumApp() {
 
       {profilePromptOpen ? (
         <ProfilePrompt
-          accessToken={auth.accessToken}
+          auth={auth}
+          onAuthRefresh={handleTokenRefresh}
           profile={profile}
           onSaved={(nextProfile) => {
             setProfile(nextProfile);

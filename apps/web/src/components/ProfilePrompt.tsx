@@ -10,20 +10,24 @@ import { createPortal } from "react-dom";
 import {
   checkNicknameAvailability,
   joinLeaderboard,
+  runWithFreshAccessToken,
   trackAnalyticsEvent,
   updateProfile,
+  type AuthTokens,
 } from "../lib/api";
 import { BRAZILIAN_STATES } from "../lib/profile";
 
 interface ProfilePromptProps {
-  accessToken: string;
+  auth: AuthTokens;
+  onAuthRefresh: (tokens: AuthTokens) => void;
   profile: UserProfileDto | null;
   onSaved: (profile: UserProfileDto) => void;
   onSkip: () => void;
 }
 
 export function ProfilePrompt({
-  accessToken,
+  auth,
+  onAuthRefresh,
   profile,
   onSaved,
   onSkip,
@@ -56,7 +60,12 @@ export function ProfilePrompt({
 
     setChecking(true);
     const timeout = window.setTimeout(() => {
-      void checkNicknameAvailability(accessToken, trimmedNickname)
+      void runWithFreshAccessToken(
+        auth,
+        (accessToken) =>
+          checkNicknameAvailability(accessToken, trimmedNickname),
+        onAuthRefresh,
+      )
         .then(setAvailability)
         .catch(() =>
           setAvailability({
@@ -69,7 +78,7 @@ export function ProfilePrompt({
     }, 350);
 
     return () => window.clearTimeout(timeout);
-  }, [accessToken, nickname, profile?.nickname]);
+  }, [auth, nickname, onAuthRefresh, profile?.nickname]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -77,18 +86,24 @@ export function ProfilePrompt({
     setSubmitting(true);
 
     try {
-      const savedProfile = await updateProfile(accessToken, {
-        nickname,
-        cityName,
-        stateCode,
-        exchangeOptIn,
-      });
+      const savedProfile = await runWithFreshAccessToken(
+        auth,
+        async (accessToken) => {
+          const profile = await updateProfile(accessToken, {
+            nickname,
+            cityName,
+            stateCode,
+            exchangeOptIn,
+          });
 
-      if (!savedProfile.leaderboardJoinedAt) {
-        const joinedProfile = await joinLeaderboard(accessToken);
-        onSaved(joinedProfile);
-        return;
-      }
+          if (!profile.leaderboardJoinedAt) {
+            return joinLeaderboard(accessToken);
+          }
+
+          return profile;
+        },
+        onAuthRefresh,
+      );
 
       onSaved(savedProfile);
     } catch (error) {
@@ -101,9 +116,12 @@ export function ProfilePrompt({
   }
 
   function handleSkip() {
-    void trackAnalyticsEvent(accessToken, "profile_prompt_skipped").catch(
-      () => undefined,
-    );
+    void runWithFreshAccessToken(
+      auth,
+      (accessToken) =>
+        trackAnalyticsEvent(accessToken, "profile_prompt_skipped"),
+      onAuthRefresh,
+    ).catch(() => undefined);
     onSkip();
   }
 
@@ -204,7 +222,11 @@ export function ProfilePrompt({
             </span>
           </label>
           <div className="button-row">
-            <button className="text-button primary" type="submit" disabled={!canSave}>
+            <button
+              className="text-button primary"
+              type="submit"
+              disabled={!canSave}
+            >
               <CheckCircle2 size={17} />
               {submitting ? "Entrando..." : "Entrar no ranking"}
             </button>
@@ -214,8 +236,7 @@ export function ProfilePrompt({
           </div>
         </form>
         <div className="profile-prompt-footnote">
-          <MapPin size={16} />
-          A cidade aparece no ranking junto com seu apelido.
+          <MapPin size={16} />A cidade aparece no ranking junto com seu apelido.
         </div>
       </section>
     </div>,
@@ -246,7 +267,7 @@ function AvailabilityText({
     <small className={`field-hint ${availability.available ? "ok" : "error"}`}>
       {availability.available
         ? "Apelido disponível."
-        : availability.reason ?? "Apelido indisponível."}
+        : (availability.reason ?? "Apelido indisponível.")}
     </small>
   );
 }
